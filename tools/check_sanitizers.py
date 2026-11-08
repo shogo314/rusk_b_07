@@ -170,6 +170,13 @@ wt total;
 let s:="abc";{let c:=s[0];let alias:=c;alias='Z';wt s;}
 s.push_back('!');wt s;
 ''', b'', b'5050\nZbc\nZbc!\n'),
+    ('''struct Box{value:Int;}
+fn update(noescape x:Int){let b:=Box{value:0};let alias:=b;alias.value:=x;b.value+=1;}
+struct Letter{value:Char;}
+fn scoped(noescape x:Char)->Int{let b:=Letter{value:'?'};b.value:=x;wt b.value;return 1;}
+let x:=2;update(x);wt x;
+let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
+''', b'', b'3\na\n1\nabc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

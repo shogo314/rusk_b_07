@@ -197,6 +197,11 @@ fn diagnostics_point_to_returns_and_retaining_calls_before_ir_or_cpp_output() {
             3,
             "argument 2 of 'push_back'",
         ),
+        (
+            "struct Box{value:Int;}fn bad(noescape value:Int,values:Vec<Int>) {\nlet box:=Box{value:0};\nbox.value:=value;\nvalues.push_back(value);\n}\nlet a:Vec<Int>:=[];bad(1,a);",
+            4,
+            "argument 2 of 'push_back'",
+        ),
     ] {
         for stage in ["hir", "lir", "cpp"] {
             let case = Case::new(source);
@@ -230,6 +235,110 @@ fn diagnostics_point_to_returns_and_retaining_calls_before_ir_or_cpp_output() {
             for parameter in effects.split("ParameterEffects {").skip(1).take(2) {
                 assert!(parameter.split('}').next().unwrap().contains("escape: No"));
             }
+        }
+    }
+}
+
+#[test]
+fn private_field_stores_stay_scoped_through_aliases_branches_and_loop_rebinding() {
+    succeeds(
+        r#"
+struct Box{value:Int;}
+fn local(noescape x:Int)->Int{
+ let b:=Box{value:0};let alias:=b;alias.value:=x;
+ alias.value+=1;return b.value+1;
+}
+fn tuple(noescape x:Int)->Int{let pair:=(0,1);pair[0]:=x;return pair[0]+pair[1];}
+fn choose(noescape x:Int,flag:Bool)->Int{
+ let a:=Box{value:0};let b:=Box{value:1};let chosen:=a;
+ if flag{chosen:=b;}chosen.value:=x;return chosen.value+2;
+}
+fn repeated(noescape x:Int)->Int{
+ let b:=Box{value:0};let total:=0;
+ for i in 0..3{let alias:=b;b:=Box{value:0};alias.value:=x;total+=alias.value;}
+ return total;
+}
+fn old_snapshot(noescape x:Int)->Int{
+ let b:=Box{value:7};let old:=b.value;b.value:=x;return old;
+}
+fn generic<T>(noescape x:T){let box:=(x,x);box[0]:=x;}
+let x:=3;wt local(x),x,tuple(x),choose(x,true),choose(x,false),repeated(x),old_snapshot(x);
+generic([1,2]);
+"#,
+        "5 4 5 6 6 12 7\n",
+    );
+}
+
+#[test]
+fn published_destinations_remain_conservative_before_and_after_the_store() {
+    let cases = [
+        "fn f(noescape x:Int)->Box{let b:=Box{value:0};b.value:=x;return b;}f(1);",
+        "fn f(noescape x:Int)->Box{let b:=Box{value:0};let alias:=b;alias.value:=x;return b;}f(1);",
+        "fn f(noescape x:Int,items:Vec<Box>){let b:=Box{value:0};items.push_back(b);b.value:=x;}let items:Vec<Box>:=[];f(1,items);",
+        "fn f(noescape x:Int,items:Vec<Box>){let b:=Box{value:0};b.value:=x;items.push_back(b);}let items:Vec<Box>:=[];f(1,items);",
+        "fn f(noescape x:Int,outer:Box){let b:=Box{value:0};b:=outer;b.value:=x;}f(1,Box{value:0});",
+        "fn f(noescape x:Int)->Option<Box>{let b:=Box{value:0};let outer:=Some(b);b.value:=x;return outer;}f(1);",
+        "fn f(noescape x:Int,flag:Bool)->Option<Box>{let b:=Box{value:0};let result:Option<Box>:=None;if flag{result:=Some(b);}b.value:=x;return result;}f(1,true);",
+        "fn f(noescape x:Int,items:Vec<Box>){let b:=Box{value:0};for i in 0..2{b.value:=x;items.push_back(b);b:=Box{value:0};}}let items:Vec<Box>:=[];f(1,items);",
+    ];
+    for source in cases {
+        rejects(
+            &format!("struct Box{{value:Int;}}{source}"),
+            "noescape for parameter 'x'",
+        );
+    }
+}
+
+#[test]
+fn private_store_does_not_hide_escape_through_members_callbacks_or_unknown_calls() {
+    for tail in [
+        "return b.value;",
+        "let value:=b.value;return value;",
+        "let read:=()=>b.value;return read();",
+    ] {
+        rejects(
+            &format!(
+                "struct Box{{value:Int;}}fn f(noescape x:Int)->Int{{let b:=Box{{value:0}};b.value:=x;{tail}}}wt f(1);"
+            ),
+            "cannot prove noescape for parameter 'x'",
+        );
+    }
+    rejects(
+        r#"struct Box{value:Int;}
+extern fn foreign(b:Box){cpp_name:"foreign",code:"void foreign(auto,Loc){}",}
+fn f(noescape x:Int){let b:=Box{value:0};b.value:=x;foreign(b);}f(1);
+"#,
+        "cannot prove noescape for parameter 'x'",
+    );
+}
+
+#[test]
+fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
+    let case = Case::new(
+        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nwt plain(1),explicit(2);",
+    );
+    for stage in ["hir", "lir"] {
+        let output = case.compile_with_options(&["--emit", stage]);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let dump = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        for name in ["plain", "explicit"] {
+            let function = &dump[dump.find(&format!("name: \"{name}\",")).unwrap()..];
+            let effects = &function[function.find("effects: Summary").unwrap()..];
+            let parameter = effects
+                .split("ParameterEffects {")
+                .nth(1)
+                .unwrap()
+                .split('}')
+                .next()
+                .unwrap();
+            assert!(
+                parameter.contains("escape: No") && parameter.contains("retained: No"),
+                "{parameter}"
+            );
         }
     }
 }

@@ -1,5 +1,7 @@
 //! Conservative, target-independent summaries. Opaque code is never inferred
 //! pure from its name or from target-language source.
+mod private;
+
 use crate::{
     hir::{Place, Rvalue, Value, ValueId},
     lir::{self, Operation, Terminator},
@@ -377,7 +379,13 @@ fn escapes(summary: &mut Summary, origins: &ReturnOrigins) {
         },
     );
 }
-fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: &[Summary]) {
+fn operation(
+    op: &Operation,
+    state: &mut State,
+    summary: &mut Summary,
+    callees: &[Summary],
+    private: &BTreeSet<ValueId>,
+) {
     match op {
         Operation::Literal { result, .. } => {
             state
@@ -455,16 +463,20 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
                             ..ParameterEffects::default()
                         },
                     );
-                    // Retention in local objects is deliberately over-approximated
-                    // until their identities and reachability are modeled.
-                    summary.affect(
-                        &value,
-                        &ParameterEffects {
-                            escape: Effect::May,
-                            retained: Effect::May,
-                            ..ParameterEffects::default()
-                        },
-                    );
+                    // A function-wide proof rules out publication of these
+                    // destinations through any alias. Other stores can retain
+                    // the value outside the call, including stores performed
+                    // before an eventual publication of their destination.
+                    if !private.contains(&owner.id) {
+                        summary.affect(
+                            &value,
+                            &ParameterEffects {
+                                escape: Effect::May,
+                                retained: Effect::May,
+                                ..ParameterEffects::default()
+                            },
+                        );
+                    }
                     state.heap_unknown = true;
                 }
             }
@@ -524,6 +536,7 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
             Summary::unknown(function.params.len(), SummarySource::Opaque)
         };
     };
+    let private = private::destinations(body);
     let mut summary = Summary::inferred(function.params.len());
     let initial = State {
         values: (0..function.params.len())
@@ -538,7 +551,7 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
         let mut state = entries[index].as_ref().unwrap().clone();
         let block = &body.blocks[index];
         for op in &block.instructions {
-            operation(op, &mut state, &mut summary, callees);
+            operation(op, &mut state, &mut summary, callees, &private);
         }
         let mut successors = vec![];
         match &block.terminator {
@@ -637,6 +650,7 @@ fn first_escape(
     program: &lir::Program,
 ) -> Option<EscapeWitness> {
     let body = function.body.as_ref()?;
+    let private = private::destinations(body);
     let initial = State {
         values: (0..function.params.len())
             .map(|i| (ValueId::Parameter(i), ReturnOrigins::parameter(i)))
@@ -652,7 +666,7 @@ fn first_escape(
         for op in &block.instructions {
             let before = state.clone();
             let mut step = Summary::inferred(function.params.len());
-            operation(op, &mut state, &mut step, callees);
+            operation(op, &mut state, &mut step, callees, &private);
             if step.parameters[parameter].escape != Effect::No {
                 let (span, effect, reason, route) = match op {
                     Operation::Call(call) => {
