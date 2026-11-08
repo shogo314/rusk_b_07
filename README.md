@@ -8,7 +8,7 @@
 
 ## 現在の状態
 
-β07は開発開始段階です。言語機能と標準APIは完成したβ06を引き継ぎ、変更・副作用・共有・脱出の情報をIRで明示・解析し、一時参照の借用と非脱出スカラーの値保持などへ利用します。任意の引数・ローカル変数の注釈としてreadonly/mutable・fixed/rebindable、引数にはnoescape/escapeも導入する計画です。[β07の要件](design/beta07.md)と[開始点・実装方針](docs/development/beta07.md)を参照してください。新しい解析と最適化はまだ実装していません。
+β07は開発開始段階です。言語機能と標準APIは完成したβ06を引き継ぎ、変更・副作用・共有・脱出の情報をIRで明示・解析し、一時参照の借用と非脱出スカラーの値保持などへ利用します。任意の引数・ローカル変数の注釈としてreadonly/mutable・fixed/rebindable、引数にはnoescape/escapeも導入する計画です。[β07の要件](design/beta07.md)と[開始点・実装方針](docs/development/beta07.md)を参照してください。関数の効果と戻り値の共有元を求める初期解析を実装中です。注釈の構文・契約検査と、新しい最適化はまだ実装していません。
 
 β06では[パターン分岐・ガード・if let](docs/reference/beta06.md)を追加しています。入れ子のenum、タプル・構造体、定数、orパターン、matchガード、文と式のif let、while letに対応します。[最小・最大演算子](docs/reference/minmax.md)にも対応します。[β06の要件](design/beta06.md)を参照してください。
 

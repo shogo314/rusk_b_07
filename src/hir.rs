@@ -150,6 +150,7 @@ pub(crate) struct Function {
     pub params: Vec<String>,
     pub result: String,
     pub body: Option<Body>,
+    pub effects: crate::effects::Summary,
 }
 #[derive(Debug)]
 pub(crate) struct Program {

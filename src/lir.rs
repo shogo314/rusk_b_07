@@ -241,6 +241,7 @@ pub(crate) struct ProgramFunction {
     pub params: Vec<String>,
     pub result: String,
     pub body: Option<Function>,
+    pub effects: crate::effects::Summary,
 }
 #[derive(Debug)]
 pub(crate) struct Program {
@@ -260,6 +261,7 @@ pub(crate) fn lower_program(program: &hir::Program) -> Program {
                 params: f.params.clone(),
                 result: f.result.clone(),
                 body: f.body.as_ref().map(lower),
+                effects: f.effects.clone(),
             })
             .collect(),
         main: lower(&program.main),
@@ -275,6 +277,8 @@ impl Program {
             {
                 return Err(format!("invalid LIR signature for {}", f.name));
             }
+            f.effects
+                .validate_signature(&f.params, &f.result, &self.types, f.body.is_some())?;
             if let Some(body) = &f.body {
                 self.validate_body(body, &f.params, &f.result, true)?;
             }

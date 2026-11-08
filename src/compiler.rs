@@ -331,17 +331,25 @@ impl Compiler {
                     params: f.params.clone(),
                     result: f.result.clone(),
                     body: f.checked.clone(),
+                    effects: crate::effects::Summary::unanalyzed(f.params.len()),
                 })
                 .collect(),
             main: std::mem::take(&mut self.body),
         };
         hir.prune_unreachable();
         hir.validate()?;
+        let mut lir = crate::lir::lower_program(&hir);
+        lir.validate()?;
+        let summaries = crate::effects::analyze(&lir);
+        for (id, summary) in summaries.into_iter().enumerate() {
+            hir.functions[id].effects = summary.clone();
+            lir.functions[id].effects = summary;
+        }
+        hir.validate()?;
+        lir.validate()?;
         if matches!(emit, crate::backend::Emit::Hir) {
             return Ok(format!("{hir:#?}\n"));
         }
-        let lir = crate::lir::lower_program(&hir);
-        lir.validate()?;
         if matches!(emit, crate::backend::Emit::Lir) {
             return Ok(format!("{lir:#?}\n"));
         }

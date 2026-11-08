@@ -267,6 +267,8 @@ impl Program {
             }
         }
         for (id, f) in self.functions.iter().enumerate() {
+            f.effects
+                .validate_signature(&f.params, &f.result, &self.types, f.body.is_some())?;
             if id != f.id {
                 return Err("unstable IR function ID".into());
             }
@@ -321,6 +323,7 @@ mod tests {
             functions: vec![Function {
                 id: 0,
                 name: "identity".into(),
+                effects: crate::effects::Summary::unanalyzed(1),
                 params: vec!["Int".into()],
                 result: "Int".into(),
                 body: None,

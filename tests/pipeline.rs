@@ -93,3 +93,59 @@ fn semantic_failures_are_rejected_before_hir_and_lir_output() {
             .success()
     );
 }
+
+#[test]
+fn inferred_effects_and_return_aliases_are_preserved_in_both_irs() {
+    let case = Case::new(
+        r#"
+struct Item { value: Int; }
+fn identity(x: Int) -> Int { return x; }
+fn element(item: Item) -> Int { return item.value; }
+fn wrapped(x: Int) -> Item { return Item { value: x }; }
+fn fresh(x: Int) -> Int { return 7; }
+fn rebound(x: Int) -> Int { x := 7; return x; }
+extern fn opaque(x: Int) -> Int {
+    cpp_name: "test_opaque",
+    code: "Obj<std::int64_t> test_opaque(Obj<std::int64_t> x,Loc){return x;}",
+}
+fn external(x: Int) -> Int { return opaque(x); }
+fn apply<F>(f: F, x: Int) -> Int { return f(x); }
+let captured := 5;
+let callback := (x: Int) => captured;
+wt apply(callback, 99);
+wt identity(3), element(wrapped(4)), fresh(0), rebound(0), external(5);
+"#,
+    );
+    fn summary<'a>(dump: &'a str, name: &str) -> &'a str {
+        let name = format!("name: \"{name}\",");
+        let function = &dump[dump.find(&name).unwrap()..];
+        let effects = &function[function.find("effects: Summary {").unwrap()..];
+        &effects[..effects.find("\n            },").unwrap()]
+    }
+    for stage in ["hir", "lir"] {
+        let out = case.compile_with_options(&["--emit", stage]);
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let dump = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        let identity = summary(&dump, "identity");
+        assert!(identity.contains("source: Inferred") && identity.contains("parameter: 0"));
+        assert!(identity.contains("write: No") && identity.contains("escape: May"));
+        let element = summary(&dump, "element");
+        assert!(element.contains("read: May") && element.contains("Field("));
+        assert!(summary(&dump, "wrapped").contains("Field("));
+        let applied = summary(&dump, "apply");
+        assert!(applied.contains("Field(") && applied.contains("parameter: 0"));
+        assert!(applied.contains("write: No"));
+        for name in ["fresh", "rebound"] {
+            let effects = summary(&dump, name);
+            assert!(effects.contains("aliases: {}") && effects.contains("fresh: true"));
+            assert!(effects.contains("write: No") && effects.contains("escape: No"));
+        }
+        let opaque = summary(&dump, "opaque");
+        assert!(opaque.contains("source: Opaque") && opaque.contains("write: Unknown"));
+        assert!(summary(&dump, "external").contains("write: Unknown"));
+    }
+}

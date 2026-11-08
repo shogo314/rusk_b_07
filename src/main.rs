@@ -1,6 +1,7 @@
 mod ast;
 mod backend;
 mod compiler;
+mod effects;
 mod hir;
 mod hir_flow;
 mod hir_validate;
