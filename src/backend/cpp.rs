@@ -40,13 +40,13 @@ pub(crate) fn emit(
             }
         }
     }
-    let boolean_aliases = if optimize {
-        super::boolean_aliases::plan(function, functions, summaries)
+    let scalar_aliases = if optimize {
+        super::scalar_aliases::plan(function, functions, summaries)
     } else {
         BTreeMap::new()
     };
     let mut persistent = super::storage::persistent(function);
-    persistent.extend(boolean_aliases.values().cloned());
+    persistent.extend(scalar_aliases.values().cloned());
     let declaration = |value: &crate::hir::Value| {
         if persistent.contains(&value.id) {
             String::new()
@@ -61,7 +61,7 @@ pub(crate) fn emit(
     };
     let mut out = String::new();
     for slot in &function.slots {
-        if boolean_aliases
+        if scalar_aliases
             .get(&slot.id)
             .is_some_and(|owner| *owner != slot.id)
         {
@@ -76,15 +76,17 @@ pub(crate) fn emit(
             out += &format!("{storage}<{}> {};\n", types[&slot.ty], slot.id);
         }
     }
-    for (alias, owner) in &boolean_aliases {
-        if alias != owner {
-            out += &format!("RuskTemporary<bool>& {alias}={owner};\n");
+    for slot in &function.slots {
+        if let Some(owner) = scalar_aliases.get(&slot.id)
+            && slot.id != *owner
+        {
+            out += &format!("RuskTemporary<{}>& {}={owner};\n", types[&slot.ty], slot.id);
         }
     }
     let release = |values: &[ValueId]| {
         values
             .iter()
-            .filter(|v| !boolean_aliases.get(*v).is_some_and(|owner| owner != *v))
+            .filter(|v| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
             .map(|v| format!("{v}.reset();\n"))
             .collect::<String>()
     };
@@ -96,7 +98,7 @@ pub(crate) fn emit(
                 result,
                 expression: Rvalue::Share(_),
             } = instruction
-                && boolean_aliases
+                && scalar_aliases
                     .get(&result.id)
                     .is_some_and(|owner| *owner != result.id)
             {

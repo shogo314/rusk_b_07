@@ -163,6 +163,13 @@ wt total,code(s[0]);s.push_back('!');wt s;
 struct Box{value:Int;}
 readonly let r:=1;let a:=Box{value:0};let b:=Box{value:0};a.value:=r;b.value=2;wt a.value,b.value;
 ''', b'', b'4 97\nabc!\n1 2\n'),
+    ('''let total:=0;let i:=0;
+while i<100{let value:=i+1;let alias:=value;
+let c:='a';let ca:=c;if ca=='a'{total+=alias;}i+=1;}
+wt total;
+let s:="abc";{let c:=s[0];let alias:=c;alias='Z';wt s;}
+s.push_back('!');wt s;
+''', b'', b'5050\nZbc\nZbc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

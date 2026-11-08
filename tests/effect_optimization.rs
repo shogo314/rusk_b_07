@@ -141,3 +141,34 @@ fn fresh_boolean_snapshots_and_variant_tests_avoid_per_iteration_allocations() {
         assert!(plain > 1000, "reference allocations: {plain}");
     }
 }
+
+#[test]
+fn closed_integer_and_character_aliases_avoid_allocations() {
+    for source in [
+        "let total:=0;let i:=0;while i<1000{let value:=i+1;let alias:=value;if alias>0{total+=1;}i+=1;}",
+        "let total:=0;let i:=0;while i<1000{let value:='a';let alias:=value;if alias=='a'{total+=1;}i+=1;}",
+    ] {
+        let (fast, plain) = allocations(source);
+        assert!(fast < 30, "optimized allocations: {fast}");
+        assert!(plain > 1000, "reference allocations: {plain}");
+    }
+}
+
+#[test]
+fn scalar_aliases_preserve_shared_updates_and_escaping_ownership() {
+    equivalent(
+        r#"
+let a:=12;let alias:=a;alias=19;wt a,alias;
+let b:=21;let old:=b;b:=34;wt b,old;
+let c:='a';let ca:=c;ca='z';wt c,ca;
+let captured:=10;let read:=()=>captured;captured=20;wt read();
+let value:=30;let stored:=[value];value=40;wt stored;
+fn identity(x:Int)->Int{return x;}
+let x:=50;let y:=identity(x);x=60;wt x,y;
+fn fresh()->Int{let value:=70;let alias:=value;return alias;}
+let result:=fresh();result=80;wt result;
+let i:=0;while i<3{let value:=i+100;let alias:=value;wt alias;i+=1;}
+"#,
+        "19 19\n34 21\nz z\n20\n40\n60 60\n80\n100\n101\n102\n",
+    );
+}

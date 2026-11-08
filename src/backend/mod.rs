@@ -1,8 +1,8 @@
 //! Target-specific representation selection and C++ emission from LIR.
-mod boolean_aliases;
 mod cpp;
 mod intrinsics;
 mod program;
+mod scalar_aliases;
 mod storage;
 pub(crate) use program::{Context, emit as emit_program};
 pub(crate) struct FunctionInfo {

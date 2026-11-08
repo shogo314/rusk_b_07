@@ -1,4 +1,4 @@
-//! Closed groups of fresh Bool references can share inline storage. Every use
+//! Closed groups of fresh scalar references can share inline storage. Every use
 //! must stay in generated scalar operations; foreign calls, returns, member
 //! storage and rebinding keep ordinary ownership and promotion semantics.
 use super::{FunctionInfo, intrinsics};
@@ -27,7 +27,7 @@ pub(super) fn plan(
     let mut fresh = BTreeSet::new();
     let mut aliases = BTreeSet::new();
     for slot in &body.slots {
-        if slot.ty == "Bool" {
+        if matches!(slot.ty.as_str(), "Bool" | "Int" | "Char") {
             parents.insert(slot.id.clone(), slot.id.clone());
         }
     }
@@ -37,11 +37,11 @@ pub(super) fn plan(
                 Operation::Declare {
                     result,
                     initial: Some(value),
-                } if result.ty == "Bool" => Some((result, value)),
+                } if matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => Some((result, value)),
                 Operation::Object {
                     result,
                     expression: Rvalue::Share(value),
-                } if result.ty == "Bool" => Some((result, value)),
+                } if matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => Some((result, value)),
                 _ => None,
             };
             if let Some((result, value)) = pair {
@@ -60,11 +60,11 @@ pub(super) fn plan(
                 | Operation::Object {
                     result,
                     expression: Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. },
-                } if result.ty == "Bool" => {
+                } if matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => {
                     fresh.insert(result.id.clone());
                 }
                 Operation::Call(call)
-                    if call.result.ty == "Bool"
+                    if matches!(call.result.ty.as_str(), "Bool" | "Int" | "Char")
                         && intrinsics::lower(call, &functions[call.function]).is_some() =>
                 {
                     fresh.insert(call.result.id.clone());
