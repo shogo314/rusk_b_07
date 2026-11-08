@@ -95,6 +95,16 @@ pub(super) fn lower(call: &Call, info: &FunctionInfo) -> Option<String> {
 /// from scalar lowering: their results alias existing objects and must never be
 /// classified as fresh inline values. Operands are already evaluated LIR slots.
 pub(super) fn lower_owned(call: &Call, info: &FunctionInfo) -> Option<String> {
+    lower_element(call, info, false)
+}
+
+/// The caller must prove that the source and its element slots remain alive
+/// and unchanged until the last use. Never use this for an escaping result.
+pub(super) fn lower_borrowed(call: &Call, info: &FunctionInfo) -> Option<String> {
+    lower_element(call, info, true)
+}
+
+fn lower_element(call: &Call, info: &FunctionInfo, borrowed: bool) -> Option<String> {
     if !info.trusted {
         return None;
     }
@@ -110,9 +120,12 @@ pub(super) fn lower_owned(call: &Call, info: &FunctionInfo) -> Option<String> {
                 "(*{owner})[checked_index({owner}->size(),*{index},{loc})]"
             ))
         }
-        "__iter_next__" if first.ty.starts_with("Iter<") && call.args.len() == 1 => Some(format!(
-            "([&](){{check_iter({owner},{loc});if({owner}->index>={owner}->owner->size())fail({loc},\"iterator exhausted\");return (*{owner}->owner)[{owner}->index++];}}())"
-        )),
+        "__iter_next__" if first.ty.starts_with("Iter<") && call.args.len() == 1 => {
+            let result = if borrowed { " -> const auto&" } else { "" };
+            Some(format!(
+                "([&](){result}{{check_iter({owner},{loc});if({owner}->index>={owner}->owner->size())fail({loc},\"iterator exhausted\");return (*{owner}->owner)[{owner}->index++];}}())"
+            ))
+        }
         _ => None,
     }
 }

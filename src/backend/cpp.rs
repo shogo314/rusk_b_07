@@ -46,7 +46,7 @@ pub(crate) fn emit(
         BTreeMap::new()
     };
     let owned = if optimize {
-        super::owned_aliases::plan(function, functions, summaries)
+        super::owned_aliases::plan(function, functions, summaries, &scalar_aliases)
     } else {
         super::owned_aliases::Plan::default()
     };
@@ -103,7 +103,10 @@ pub(crate) fn emit(
             .iter()
             .filter(|v| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
             .filter_map(|v| match owned.releases.get(v) {
-                Some(Some(owner)) => Some(format!("{owner}.reset();\n")),
+                Some(Some(owner)) if !owned.elements.contains(owner) => {
+                    Some(format!("{owner}.reset();\n"))
+                }
+                Some(Some(_)) => None,
                 Some(None) => None,
                 None => Some(format!("{v}.reset();\n")),
             })
@@ -238,8 +241,12 @@ pub(crate) fn emit(
                 Instruction::Call(call) => {
                     let info = &functions[call.function];
                     let direct = if optimize {
-                        intrinsics::lower(call, info)
-                            .or_else(|| intrinsics::lower_owned(call, info))
+                        if owned.elements.contains(&call.result.id) {
+                            intrinsics::lower_borrowed(call, info)
+                        } else {
+                            intrinsics::lower(call, info)
+                                .or_else(|| intrinsics::lower_owned(call, info))
+                        }
                     } else {
                         None
                     };
@@ -274,11 +281,12 @@ pub(crate) fn emit(
                             types[&call.result.ty]
                         );
                     } else {
-                        out += &format!(
-                            "{}{}={expression};\n",
-                            declaration(&call.result),
-                            call.result.id
-                        );
+                        let storage = if owned.elements.contains(&call.result.id) {
+                            format!("const Obj<{}>& ", types[&call.result.ty])
+                        } else {
+                            declaration(&call.result)
+                        };
+                        out += &format!("{}{}={expression};\n", storage, call.result.id);
                     }
                 }
             }

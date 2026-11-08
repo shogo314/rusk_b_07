@@ -281,3 +281,92 @@ let numbers:=[1,2];for x in numbers{x+=10;}wt numbers;
         "{cpp}"
     );
 }
+
+#[test]
+fn element_slot_borrowing_keeps_shared_updates_and_character_lifetimes() {
+    equivalent(
+        r#"
+let values:=[1,2,3];let total:=0;
+for x in values{let alias:=x;total+=alias;}wt total;
+let flags:=[true,false];for flag in flags{wt flag;}
+let text:="ab";let chars:=[text[0],text[1]];
+for ch in chars{let alias:=ch;wt alias;}
+chars=[];text.push_back('!');wt text;
+let numbers:=[1];let other:=numbers[0];
+for x in numbers{other=8;wt x;}wt numbers;
+"#,
+        "6\nYes\nNo\na\nb\nab!\n8\n8\n",
+    );
+    let case = Case::new("let a:=[1,2,3];let total:=0;for x in a{total+=x;}wt total;");
+    assert!(case.compile().status.success());
+    let fast = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    let next = fast
+        .split_once("int main() {")
+        .unwrap()
+        .1
+        .lines()
+        .find(|line| line.contains("iterator exhausted"))
+        .unwrap();
+    assert!(
+        next.starts_with("const Obj<std::int64_t>& rusk_v"),
+        "{next}"
+    );
+    assert!(next.contains("() -> const auto&"), "{next}");
+    let owner = next
+        .split('&')
+        .nth(1)
+        .unwrap()
+        .split('=')
+        .next()
+        .unwrap()
+        .trim();
+    assert!(!fast.contains(&format!("{owner}.reset()")), "{fast}");
+    assert!(case.compile_with_options(&["--no-opt"]).status.success());
+    let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    assert!(!plain.contains("() -> const auto&"));
+}
+
+#[test]
+fn element_slots_keep_ownership_when_source_or_storage_may_change() {
+    let foreign_drop = r#"
+extern fn deferred(a:Vec<Int>)->Int{
+ cpp_name:"deferred",
+ code:"Obj<std::int64_t> deferred(Obj<IntVec> a,Loc){return Obj<std::int64_t>(new std::int64_t(0),[a](std::int64_t* p){(*a)[0]=make_obj<std::int64_t>(9);delete p;});}",
+}
+let a:=[1];{let token:=deferred(a);for x in a{{let alias:=token;}wt x;}}wt a;
+"#;
+    equivalent(foreign_drop, "1\n9\n");
+    equivalent(
+        r#"
+let value:={let a:=[7];a[0]};wt value;
+fn replace(a:Vec<Int>){a[0]:=9;}
+let a:=[1];for x in a{replace(a);wt x;}wt a;
+let b:=[2];for x in b{b[0]:=8;wt x;}wt b;
+let c:=[3];let i:=0;for x in c{i:=1;wt x;}wt i;
+"#,
+        "7\n1\n9\n2\n8\n3\n1\n",
+    );
+    for source in [
+        "let a:=[1];let x:={let b:=[7];b[0]};wt x;",
+        "fn see(x:Int){wt x;}let a:=[1];for x in a{see(3);wt x;}",
+        "let a:=[1];for x in a{a[0]:=7;wt x;}",
+        "let a:=[1];let i:=0;for x in a{i:=1;wt x;}wt i;",
+        foreign_drop,
+    ] {
+        let case = Case::new(source);
+        assert!(case.compile().status.success());
+        let cpp = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        assert!(!cpp.contains("() -> const auto&"), "{cpp}");
+        let access = cpp
+            .split_once("int main() {")
+            .unwrap()
+            .1
+            .lines()
+            .find(|line| {
+                line.contains("iterator exhausted")
+                    || (line.contains("=(*") && line.contains("checked_index("))
+            })
+            .unwrap();
+        assert!(access.starts_with("Obj<std::int64_t> "), "{access}");
+    }
+}

@@ -220,6 +220,19 @@ chars=[];text.push_back('!');wt text;
 }
 let result:=total(100);let saved:=result;wt result;result=7;wt saved,total(5);
 ''', b'', b'4950\n7 10\n'),
+    ('''let values:=[1,2,3];let total:=0;
+for x in values{let alias:=x;total+=alias;}wt total;
+let numbers:=[1];let other:=numbers[0];for x in numbers{other=8;wt x;}
+let text:="ab";let chars:=[text[0],text[1]];
+for ch in chars{let alias:=ch;wt alias;}chars=[];text.push_back('!');wt text;
+let held:={let a:=[7];a[0]};wt held;
+let a:=[1];for x in a{a[0]:=9;wt x;}wt a;
+extern fn deferred(a:Vec<Int>)->Int{
+ cpp_name:"deferred",
+ code:"Obj<std::int64_t> deferred(Obj<IntVec> a,Loc){return Obj<std::int64_t>(new std::int64_t(0),[a](std::int64_t* p){(*a)[0]=make_obj<std::int64_t>(9);delete p;});}",
+}
+let b:=[1];{let token:=deferred(b);for x in b{{let alias:=token;}wt x;}}wt b;
+''', b'', b'6\n8\na\nb\nab!\n7\n1\n9\n1\n9\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

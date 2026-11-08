@@ -1,8 +1,8 @@
-//! Borrow aliases of an owning element within one block. The owner is reset at
-//! the final original release, preserving object and character-reference life.
-use super::{FunctionInfo, scalar_aliases, storage};
+//! Borrow element aliases within one block. Keep one owner until the final
+//! release, or borrow the slot itself when its source and storage stay alive.
+use super::{FunctionInfo, intrinsics, scalar_aliases, storage};
 use crate::{
-    hir::ValueId,
+    hir::{Rvalue, ValueId},
     lir::{Function, Operation, ProgramFunction, Terminator},
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -10,11 +10,13 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct Plan {
     pub aliases: BTreeMap<ValueId, ValueId>,
     pub releases: BTreeMap<ValueId, Option<ValueId>>,
+    pub elements: BTreeSet<ValueId>,
 }
 pub(super) fn plan(
     body: &Function,
     functions: &[FunctionInfo],
     summaries: &[ProgramFunction],
+    inline_aliases: &BTreeMap<ValueId, ValueId>,
 ) -> Plan {
     let candidates = scalar_aliases::owned_plan(body, functions, summaries);
     let persistent = storage::persistent(body);
@@ -87,5 +89,97 @@ pub(super) fn plan(
             result.aliases.insert(id, owner.clone());
         }
     }
+    result.elements = borrow_elements(body, functions, inline_aliases, &result);
     result
+}
+
+/// A slot reference needs both its container and the slot itself to survive.
+/// The closed alias plan already confines all uses and releases to one block.
+/// Scan each interval once, rejecting source release, rebinding and every call
+/// without a trusted direct lowering. Unknown ownership operations also end
+/// borrowing: even a scalar Obj from foreign code may have a custom deleter.
+/// Scalar writes only change the pointee and remain observable.
+fn borrow_elements(
+    body: &Function,
+    functions: &[FunctionInfo],
+    inline_aliases: &BTreeMap<ValueId, ValueId>,
+    plan: &Plan,
+) -> BTreeSet<ValueId> {
+    let mut safe_values: BTreeSet<_> = inline_aliases.keys().cloned().collect();
+    for block in &body.blocks {
+        for op in &block.instructions {
+            let fresh = match op {
+                Operation::Literal { result, .. }
+                | Operation::Object {
+                    result,
+                    expression: Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. },
+                } => Some(result),
+                Operation::Call(call)
+                    if call.result.ty == "Unit"
+                        || intrinsics::lower(call, &functions[call.function]).is_some() =>
+                {
+                    Some(&call.result)
+                }
+                _ => None,
+            };
+            if let Some(value) = fresh {
+                safe_values.insert(value.id.clone());
+            }
+        }
+    }
+    let mut elements = BTreeSet::new();
+    for block in &body.blocks {
+        let mut active = BTreeMap::<ValueId, ValueId>::new();
+        let mut release = |ids: &[ValueId], active: &mut BTreeMap<ValueId, ValueId>| {
+            for id in ids {
+                active.retain(|_, source| source != id);
+                let borrowed = plan
+                    .aliases
+                    .get(id)
+                    .is_some_and(|owner| active.contains_key(owner));
+                if !safe_values.contains(id) && !borrowed {
+                    active.clear();
+                }
+                if let Some(Some(owner)) = plan.releases.get(id)
+                    && active.remove(owner).is_some()
+                {
+                    elements.insert(owner.clone());
+                }
+            }
+        };
+        for op in &block.instructions {
+            match op {
+                Operation::Call(call) => {
+                    let info = &functions[call.function];
+                    let element = intrinsics::lower_owned(call, info).is_some();
+                    let candidate =
+                        element && plan.aliases.get(&call.result.id) == Some(&call.result.id);
+                    if !(candidate || safe_values.contains(&call.result.id))
+                        || (!element && intrinsics::lower(call, info).is_none())
+                    {
+                        active.clear();
+                    }
+                    if candidate {
+                        active.insert(call.result.id.clone(), call.args[0].id.clone());
+                    }
+                }
+                Operation::Object { result, .. } | Operation::Declare { result, .. }
+                    if !safe_values.contains(&result.id)
+                        && !plan
+                            .aliases
+                            .get(&result.id)
+                            .is_some_and(|owner| active.contains_key(owner)) =>
+                {
+                    active.clear();
+                }
+                Operation::Rebind { .. } => active.clear(),
+                Operation::Release(ids) => release(ids, &mut active),
+                _ => {}
+            }
+        }
+        if let Terminator::Return { cleanup, .. } = &block.terminator {
+            release(cleanup, &mut active);
+        }
+    }
+    elements
 }
