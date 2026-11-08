@@ -209,6 +209,7 @@ pub(crate) fn emit(
                     let info = &functions[call.function];
                     let direct = if optimize {
                         intrinsics::lower(call, info)
+                            .or_else(|| intrinsics::lower_owned(call, info))
                     } else {
                         None
                     };

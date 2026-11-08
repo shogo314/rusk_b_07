@@ -90,3 +90,29 @@ pub(super) fn lower(call: &Call, info: &FunctionInfo) -> Option<String> {
         _ => None,
     }
 }
+
+/// Reference-producing operations retain an owning result. Keep them separate
+/// from scalar lowering: their results alias existing objects and must never be
+/// classified as fresh inline values. Operands are already evaluated LIR slots.
+pub(super) fn lower_owned(call: &Call, info: &FunctionInfo) -> Option<String> {
+    if !info.trusted {
+        return None;
+    }
+    let first = call.args.first()?;
+    let owner = &first.id;
+    let loc = super::cpp::call_location(call);
+    match info.name.as_str() {
+        "__getitem__"
+            if first.ty.starts_with("Vec<") && call.args.len() == 2 && call.args[1].ty == "Int" =>
+        {
+            let index = &call.args[1].id;
+            Some(format!(
+                "(*{owner})[checked_index({owner}->size(),*{index},{loc})]"
+            ))
+        }
+        "__iter_next__" if first.ty.starts_with("Iter<") && call.args.len() == 1 => Some(format!(
+            "([&](){{check_iter({owner},{loc});if({owner}->index>={owner}->owner->size())fail({loc},\"iterator exhausted\");return (*{owner}->owner)[{owner}->index++];}}())"
+        )),
+        _ => None,
+    }
+}

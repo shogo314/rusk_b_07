@@ -172,3 +172,37 @@ let i:=0;while i<3{let value:=i+100;let alias:=value;wt alias;i+=1;}
         "19 19\n34 21\nz z\n20\n40\n60 60\n80\n100\n101\n102\n",
     );
 }
+
+#[test]
+fn vector_access_lowering_keeps_owning_elements_and_evaluation_order() {
+    equivalent(
+        r#"
+let a:=[1,2];let old:=a[0];a[0]:=3;a.push_back(4);old=9;wt old,a;
+let b:=[[1],[2]];let saved:=b[0];b=[];saved.push_back(3);wt saved;
+let values:=[1,2];let selected:=values[{values=[7,8];0}];wt selected,values;
+let rows:=[[1],[2]];let held:Vec<Int>:=[];
+for row in rows{held:=row;row[0]+=10;}rows=[];wt held;
+let flags:=[true];let flag:=flags[0];flags[0]=false;wt flag;
+let chars:=['a'];let ch:=chars[0];chars=[];ch='z';wt ch;
+"#,
+        "9 3 2 4\n1 3\n7 7 8\n12\nNo\nz\n",
+    );
+}
+
+#[test]
+fn lowered_vector_access_preserves_bounds_and_structural_change_diagnostics() {
+    for source in [
+        "let a:=[1];wt a[-2];",
+        "let a:=[1];wt a[1];",
+        "let a:=[1,2];for x in a{a.push_back(3);wt x;}",
+        "let a:=[1];let it:=a.__iter__();wt it.__iter_next__();wt it.__iter_next__();",
+    ] {
+        let case = Case::new(source);
+        let fast = case.run("");
+        let plain = case.run_with_options("", &["--no-opt"]);
+        assert!(!fast.status.success());
+        assert_eq!(fast.status.code(), plain.status.code());
+        assert_eq!(fast.stdout, plain.stdout);
+        assert_eq!(fast.stderr, plain.stderr);
+    }
+}
