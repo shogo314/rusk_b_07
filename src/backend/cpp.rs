@@ -45,6 +45,11 @@ pub(crate) fn emit(
     } else {
         BTreeMap::new()
     };
+    let owned = if optimize {
+        super::owned_aliases::plan(function, functions, summaries)
+    } else {
+        super::owned_aliases::Plan::default()
+    };
     let mut persistent = super::storage::persistent(function);
     persistent.extend(scalar_aliases.values().cloned());
     let declaration = |value: &crate::hir::Value| {
@@ -87,7 +92,11 @@ pub(crate) fn emit(
         values
             .iter()
             .filter(|v| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
-            .map(|v| format!("{v}.reset();\n"))
+            .filter_map(|v| match owned.releases.get(v) {
+                Some(Some(owner)) => Some(format!("{owner}.reset();\n")),
+                Some(None) => None,
+                None => Some(format!("{v}.reset();\n")),
+            })
             .collect::<String>()
     };
     for (index, block) in function.blocks.iter().enumerate() {
@@ -102,6 +111,17 @@ pub(crate) fn emit(
                     .get(&result.id)
                     .is_some_and(|owner| *owner != result.id)
             {
+                continue;
+            }
+            if let Instruction::Declare { result, .. }
+            | Instruction::Object {
+                result,
+                expression: Rvalue::Share(_),
+            } = instruction
+                && let Some(owner) = owned.aliases.get(&result.id)
+                && *owner != result.id
+            {
+                out += &format!("const Obj<{}>& {}={owner};\n", types[&result.ty], result.id);
                 continue;
             }
             match instruction {

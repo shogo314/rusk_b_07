@@ -209,6 +209,12 @@ fn scoped(noescape x:Char)->Int{
 }
 let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
 ''', b'', b'a\n1\nabc!\n'),
+    ('''let values:=[1,2,3];let total:=0;
+for x in values{let alias:=x;let other:=alias;total+=other;}wt total;
+let text:="ab";let chars:=[text[0]];
+{let c:=chars[0];let alias:=c;wt alias;}
+chars=[];text.push_back('!');wt text;
+''', b'', b'6\na\nab!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

@@ -23,6 +23,21 @@ pub(super) fn plan(
     functions: &[FunctionInfo],
     summaries: &[ProgramFunction],
 ) -> BTreeMap<ValueId, ValueId> {
+    groups(body, functions, summaries, false)
+}
+pub(super) fn owned_plan(
+    body: &Function,
+    functions: &[FunctionInfo],
+    summaries: &[ProgramFunction],
+) -> BTreeMap<ValueId, ValueId> {
+    groups(body, functions, summaries, true)
+}
+fn groups(
+    body: &Function,
+    functions: &[FunctionInfo],
+    summaries: &[ProgramFunction],
+    owned: bool,
+) -> BTreeMap<ValueId, ValueId> {
     let mut parents = BTreeMap::new();
     let mut fresh = BTreeSet::new();
     let mut aliases = BTreeSet::new();
@@ -60,12 +75,16 @@ pub(super) fn plan(
                 | Operation::Object {
                     result,
                     expression: Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. },
-                } if matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => {
+                } if !owned && matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => {
                     fresh.insert(result.id.clone());
                 }
                 Operation::Call(call)
                     if matches!(call.result.ty.as_str(), "Bool" | "Int" | "Char")
-                        && intrinsics::lower(call, &functions[call.function]).is_some() =>
+                        && (if owned {
+                            intrinsics::lower_owned(call, &functions[call.function]).is_some()
+                        } else {
+                            intrinsics::lower(call, &functions[call.function]).is_some()
+                        }) =>
                 {
                     fresh.insert(call.result.id.clone());
                 }
@@ -114,6 +133,7 @@ pub(super) fn plan(
                         }
                     }
                 }
+                Operation::StoreBool { target, .. } if owned => block_value(&target.id),
                 Operation::Rebind { target, value, .. } => {
                     block_value(&value.id);
                     if let Place::Local(id) = target {

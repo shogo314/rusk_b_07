@@ -196,6 +196,7 @@ fn lowered_vector_access_preserves_bounds_and_structural_change_diagnostics() {
         "let a:=[1];wt a[1];",
         "let a:=[1,2];for x in a{a.push_back(3);wt x;}",
         "let a:=[1];let it:=a.__iter__();wt it.__iter_next__();wt it.__iter_next__();",
+        "let text:=\"ab\";let chars:=[text[0]];{let c:=chars[0];let alias:=c;chars=[];wt alias;text.push_back('!');}",
     ] {
         let case = Case::new(source);
         let fast = case.run("");
@@ -205,4 +206,29 @@ fn lowered_vector_access_preserves_bounds_and_structural_change_diagnostics() {
         assert_eq!(fast.stdout, plain.stdout);
         assert_eq!(fast.stderr, plain.stderr);
     }
+}
+
+#[test]
+fn element_alias_borrowing_preserves_release_points_and_read_snapshots() {
+    equivalent(
+        r#"
+let values:=[1,2,3];let total:=0;
+for x in values{let alias:=x;let second:=alias;total+=second;}
+wt total;
+let flags:=[true,false];for flag in flags{let alias:=flag;wt alias;}
+let text:="ab";let chars:=[text[0]];
+{let c:=chars[0];let alias:=c;wt alias;}
+chars=[];text.push_back('!');wt text;
+let a:=[3];let old:=a[0];let alias:=old;a[0]:=7;wt alias,a;
+"#,
+        "6\nYes\nNo\na\nab!\n3 7\n",
+    );
+    let case =
+        Case::new("let a:=[1,2,3];let total:=0;for x in a{let alias:=x;total+=alias;}wt total;");
+    assert!(case.compile().status.success());
+    let fast = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    assert!(fast.contains("const Obj<std::int64_t>& rusk_v"), "{fast}");
+    assert!(case.compile_with_options(&["--no-opt"]).status.success());
+    let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    assert!(!plain.contains("const Obj<std::int64_t>& rusk_v"));
 }

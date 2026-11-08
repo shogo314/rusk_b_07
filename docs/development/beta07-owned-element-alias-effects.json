@@ -1,0 +1,170 @@
+{
+  "utc": "2026-11-08T21:27:14.847069+00:00",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "cpu": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+  "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "compiler_sha256": {
+    "baseline": "3a19e1393186f321adcba971bae74992b8e5ef6685aac84980d2b8b567d8c8a8",
+    "current": "605b36a9ecd4ccb1575a0685d161a42611a58ca8a1f9a790451dc8945f36e321"
+  },
+  "repeats": 7,
+  "flags": [
+    "-std=c++20",
+    "-O2"
+  ],
+  "timing": "interleaved; compilation excluded; instrumentation measured separately",
+  "cases": {
+    "scalar_call": {
+      "source": "fn add_one(x:Int)->Int{return x+1;}let i:=0;let total:=0;while i<500000{total+=add_one(i);i+=1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "125000250000\n",
+          "cpp_sha256": "e12e08a282ca6c7e920f8363fad8e4335c1ffdd4fef620b64aa594c858030be8",
+          "runs_ms": [
+            11.89492,
+            11.272222,
+            11.375606,
+            12.279432,
+            10.970707,
+            12.060144,
+            11.526521
+          ],
+          "allocations": 500008,
+          "shared_ptr_copies": 3500004,
+          "median_ms": 11.526521
+        },
+        "current": {
+          "output": "125000250000\n",
+          "cpp_sha256": "e12e08a282ca6c7e920f8363fad8e4335c1ffdd4fef620b64aa594c858030be8",
+          "runs_ms": [
+            12.458455,
+            11.448332,
+            11.227157,
+            11.373272,
+            11.010833,
+            12.254814,
+            11.246584
+          ],
+          "allocations": 500008,
+          "shared_ptr_copies": 3500004,
+          "median_ms": 11.373272
+        }
+      },
+      "speedup": 1.0134744864978171
+    },
+    "find": {
+      "source": "let a:=[1;100000];let total:=0;for i in 0..20{total+=find(a,2)??-1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "-20\n",
+          "cpp_sha256": "48601ece5be6e115bac999453ed90394751a13a4b7e114f9776de3fcb2b523b8",
+          "runs_ms": [
+            37.065857,
+            37.467944,
+            36.582403,
+            37.752371,
+            36.82484,
+            36.968222,
+            37.77167
+          ],
+          "allocations": 100115,
+          "shared_ptr_copies": 16000288,
+          "median_ms": 37.065857
+        },
+        "current": {
+          "output": "-20\n",
+          "cpp_sha256": "48601ece5be6e115bac999453ed90394751a13a4b7e114f9776de3fcb2b523b8",
+          "runs_ms": [
+            38.030335,
+            38.157577,
+            37.287626,
+            37.545625,
+            37.098695,
+            38.405658,
+            37.456679
+          ],
+          "allocations": 100115,
+          "shared_ptr_copies": 16000288,
+          "median_ms": 37.545625
+        }
+      },
+      "speedup": 0.9872217335575051
+    },
+    "sum_native": {
+      "source": "let a:=[1;1000000];let total:=0;for i in 0..20{total+=sum(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "608cbc2148c2a19116e1538a8bae47ad6cb8e48f5839d9bea85ad50e9a2649bc",
+          "runs_ms": [
+            43.03929,
+            41.337211,
+            41.071753,
+            41.454294,
+            41.176622,
+            41.510022,
+            43.039651
+          ],
+          "allocations": 1000035,
+          "shared_ptr_copies": 68,
+          "median_ms": 41.454294
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "608cbc2148c2a19116e1538a8bae47ad6cb8e48f5839d9bea85ad50e9a2649bc",
+          "runs_ms": [
+            41.960577,
+            40.92075,
+            41.847638,
+            42.011108,
+            42.462957,
+            41.443718,
+            43.690682
+          ],
+          "allocations": 1000035,
+          "shared_ptr_copies": 68,
+          "median_ms": 41.960577
+        }
+      },
+      "speedup": 0.9879343174904386
+    },
+    "sum_rusk": {
+      "source": "fn rusk_total(a:Vec<Int>)->Int{let total:=0;for x in a{total+=x;}return total;}let a:=[1;1000000];let total:=0;for i in 0..20{total+=rusk_total(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "ff3a71a863a37b6109353b6911a45ca7490ec81b4b7400becd02f4ac513829e2",
+          "runs_ms": [
+            226.19181,
+            227.773298,
+            225.924347,
+            227.808476,
+            227.220025,
+            228.401521,
+            227.725797
+          ],
+          "allocations": 1000055,
+          "shared_ptr_copies": 80000208,
+          "median_ms": 227.725797
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "97455d17c500879c1b50e35cca4c4e357881f8609e1ecfce294e4e98875db1eb",
+          "runs_ms": [
+            110.492879,
+            109.895247,
+            110.612583,
+            109.402341,
+            111.884576,
+            111.219439,
+            111.505337
+          ],
+          "allocations": 1000055,
+          "shared_ptr_copies": 40000208,
+          "median_ms": 110.612583
+        }
+      },
+      "speedup": 2.0587693626140164
+    }
+  }
+}

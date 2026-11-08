@@ -1,0 +1,12 @@
+{
+  "source_sha256": "6380bbe4c630f54316bd252107da986d5c4f40082b4ee17c9798ed770d3ce769",
+  "cpp_identical": true,
+  "cpp_sha256": "a0c44d36b2af0986b5e1754fbd8d40198cd8ba2d9de8fdd3924d6a99150a5109",
+  "text_identical": true,
+  "text_sha256": "590fcb2dd46ae1d5934ded17adba2ff22bcc29f360f0bd31cd1c2f0b91a5116a",
+  "flags": [
+    "-std=c++20",
+    "-O2"
+  ],
+  "note": "Compared generated C++ on the same source path; compared ELF .text after separate GCC builds. Full ELF files differ."
+}
