@@ -5,6 +5,7 @@ struct Check<'a> {
     program: &'a Program,
     values: BTreeMap<ValueId, String>,
     loops: BTreeSet<LoopId>,
+    bindings: BTreeSet<ValueId>,
     result: &'a str,
     caller_location: bool,
 }
@@ -160,7 +161,7 @@ impl Check<'_> {
                     }
                     self.define(result)?;
                 }
-                Instruction::Rebind { target, value } => {
+                Instruction::Rebind { target, value, .. } => {
                     self.value(value)?;
                     let ty = match target {
                         Place::Local(id) => self
@@ -171,6 +172,15 @@ impl Check<'_> {
                         Place::Field { owner, index } => self.field(owner, *index)?,
                     };
                     self.same(ty, &value.ty)?;
+                }
+                Instruction::AnnotateBinding { value, .. } => {
+                    self.value(value)?;
+                    if !matches!(value.id, ValueId::Local(_)) {
+                        return Err("binding annotation requires a local identity".into());
+                    }
+                    if !self.bindings.insert(value.id.clone()) {
+                        return Err("duplicate IR binding annotation".into());
+                    }
                 }
                 Instruction::StoreBool { target, value } => {
                     self.value(target)?;
@@ -224,6 +234,7 @@ impl Program {
             program: self,
             values: BTreeMap::new(),
             loops: BTreeSet::new(),
+            bindings: BTreeSet::new(),
             result: "Unit",
             caller_location: false,
         };
@@ -279,6 +290,7 @@ impl Program {
                     program: self,
                     values: BTreeMap::new(),
                     loops: BTreeSet::new(),
+                    bindings: BTreeSet::new(),
                     result: "Unit",
                     caller_location: true,
                 }

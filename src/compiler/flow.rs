@@ -31,6 +31,13 @@ impl Compiler {
                             id: ValueId::Probe,
                             ty: ty.into(),
                             initialized: true,
+                            binding: name.binding.as_ref().map(|annotation| {
+                                crate::hir::BindingInfo {
+                                    name: name.text.clone(),
+                                    declaration: name.span.clone(),
+                                    annotation: annotation.clone(),
+                                }
+                            }),
                         },
                     );
                 }
@@ -99,6 +106,7 @@ impl Compiler {
                         c.same(expected, &result.ty, span)?;
                     }
                     c.body.push(Instruction::Rebind {
+                        span: None,
                         target: Place::Local(slot.clone()),
                         value: result.clone(),
                     });

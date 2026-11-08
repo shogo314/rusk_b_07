@@ -1,5 +1,6 @@
 mod ast;
 mod backend;
+mod bindings;
 mod compiler;
 mod effects;
 mod hir;

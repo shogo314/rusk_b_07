@@ -62,7 +62,17 @@ pub(crate) enum Place {
     Field { owner: Value, index: usize },
 }
 #[derive(Clone, Debug)]
+pub(crate) struct BindingInfo {
+    pub name: String,
+    pub declaration: Span,
+    pub annotation: crate::ast::BindingAnnotation,
+}
+#[derive(Clone, Debug)]
 pub(crate) enum Instruction {
+    AnnotateBinding {
+        value: Value,
+        info: BindingInfo,
+    },
     Object {
         result: Value,
         expression: Rvalue,
@@ -79,6 +89,7 @@ pub(crate) enum Instruction {
     Rebind {
         target: Place,
         value: Value,
+        span: Option<Span>,
     },
     StoreBool {
         target: Value,

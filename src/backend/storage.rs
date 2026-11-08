@@ -41,7 +41,7 @@ pub(super) fn persistent(function: &Function) -> BTreeSet<ValueId> {
                         add(&v.id);
                     }
                 }
-                Operation::Rebind { target, value } => {
+                Operation::Rebind { target, value, .. } => {
                     match target {
                         Place::Local(id) => add(id),
                         Place::Field { owner, .. } => add(&owner.id),
@@ -52,6 +52,7 @@ pub(super) fn persistent(function: &Function) -> BTreeSet<ValueId> {
                     add(&target.id);
                     add(&value.id);
                 }
+                Operation::AnnotateBinding { .. } => {}
                 Operation::Release(ids) => {
                     for id in ids {
                         add(id);

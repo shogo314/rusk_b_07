@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 pub(crate) struct BlockId(pub usize);
 #[derive(Clone, Debug)]
 pub(crate) enum Operation {
+    AnnotateBinding {
+        value: Value,
+        info: hir::BindingInfo,
+    },
     Object {
         result: Value,
         expression: hir::Rvalue,
@@ -22,6 +26,7 @@ pub(crate) enum Operation {
     Rebind {
         target: hir::Place,
         value: Value,
+        span: Option<crate::ast::Span>,
     },
     StoreBool {
         target: Value,
@@ -191,10 +196,21 @@ impl Lower {
                             result: result.clone(),
                             initial: initial.clone(),
                         },
-                        Instruction::Rebind { target, value } => Operation::Rebind {
+                        Instruction::Rebind {
+                            target,
+                            value,
+                            span,
+                        } => Operation::Rebind {
                             target: target.clone(),
                             value: value.clone(),
+                            span: span.clone(),
                         },
+                        Instruction::AnnotateBinding { value, info } => {
+                            Operation::AnnotateBinding {
+                                value: value.clone(),
+                                info: info.clone(),
+                            }
+                        }
                         Instruction::StoreBool { target, value } => Operation::StoreBool {
                             target: target.clone(),
                             value: value.clone(),
@@ -281,9 +297,13 @@ impl Program {
                 .validate_signature(&f.params, &f.result, &self.types, f.body.is_some())?;
             if let Some(body) = &f.body {
                 self.validate_body(body, &f.params, &f.result, true)?;
+                crate::bindings::validate(body).map_err(|error| {
+                    format!("{error}\nwhile checking binding contracts in '{}'", f.name)
+                })?;
             }
         }
-        self.validate_body(&self.main, &[], "Unit", false)
+        self.validate_body(&self.main, &[], "Unit", false)?;
+        crate::bindings::validate(&self.main)
     }
     fn validate_body(
         &self,
@@ -374,7 +394,9 @@ impl Program {
                             value(v)?;
                         }
                     }
-                    Operation::Rebind { target, value: v } => {
+                    Operation::Rebind {
+                        target, value: v, ..
+                    } => {
                         value(v)?;
                         match target {
                             hir::Place::Local(id) => {
@@ -393,6 +415,7 @@ impl Program {
                         }
                     }
                     Operation::Release(ids) => release(ids)?,
+                    Operation::AnnotateBinding { value: v, .. } => value(v)?,
                 }
             }
             match &block.terminator {

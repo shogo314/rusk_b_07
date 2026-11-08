@@ -138,7 +138,7 @@ pub(crate) fn emit(
                         out += &format!("{}{};\n", declaration(result), result.id);
                     }
                 }
-                Instruction::Rebind { target, value } => {
+                Instruction::Rebind { target, value, .. } => {
                     let target = match target {
                         Place::Local(id) => id.to_string(),
                         Place::Field { owner, index } => format!("{}->field_{index}", owner.id),
@@ -148,6 +148,7 @@ pub(crate) fn emit(
                 Instruction::StoreBool { target, value } => {
                     out += &format!("*{}=*{};\n", target.id, value.id)
                 }
+                Instruction::AnnotateBinding { .. } => {}
                 Instruction::Release(values) => out += &release(values),
                 Instruction::Call(call) => {
                     let info = &functions[call.function];

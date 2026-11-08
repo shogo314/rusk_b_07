@@ -11,7 +11,7 @@ pub(super) struct GenericRecord {
 pub(super) struct GenericFunction {
     pub name: Name,
     pub parameters: Vec<Name>,
-    pub arguments: Vec<(Name, Name)>,
+    pub arguments: Vec<(DeclaredName, Name)>,
     pub result: Option<Name>,
     pub body: Box<Stmt>,
 }

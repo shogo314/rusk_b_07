@@ -28,6 +28,7 @@ impl Compiler {
                 self.same(expected, &a.ty, span)?;
             }
             self.body.push(Instruction::Rebind {
+                span: None,
                 target: Place::Local(slot.clone()),
                 value: a.clone(),
             });
@@ -49,6 +50,7 @@ impl Compiler {
                 self.same(hint, &b.ty, span)?;
             }
             self.body.push(Instruction::Rebind {
+                span: None,
                 target: Place::Local(slot.clone()),
                 value: b.clone(),
             });

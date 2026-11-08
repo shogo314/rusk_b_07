@@ -70,10 +70,17 @@ impl Compiler {
                 index,
             },
         });
+        if let Some(info) = &variable.binding {
+            context.prologue.push(Instruction::AnnotateBinding {
+                value: value.clone(),
+                info: info.clone(),
+            });
+        }
         let local = Variable {
             id: value.id,
             ty: value.ty,
             initialized: true,
+            binding: variable.binding.clone(),
         };
         self.capture_contexts
             .last_mut()
@@ -113,7 +120,7 @@ impl Compiler {
 
     pub(super) fn lambda(
         &mut self,
-        parameters: &[(Name, Name)],
+        parameters: &[(DeclaredName, Name)],
         body: &Expr,
         span: &Span,
     ) -> Result<Value, String> {
@@ -186,7 +193,7 @@ impl Compiler {
             self.return_type = Some("Unit".into());
             let checked = (|| {
                 for (index, (name, ty)) in parameters.iter().enumerate() {
-                    self.declare(
+                    self.declare_annotated(
                         name,
                         ty.text.clone(),
                         Some(Value {
@@ -344,10 +351,10 @@ impl Compiler {
             .enumerate()
             .map(|(i, ty)| {
                 (
-                    Name {
+                    DeclaredName::plain(Name {
                         text: format!("$argument{i}"),
                         span: name.span.clone(),
-                    },
+                    }),
                     Name {
                         text: ty.clone(),
                         span: name.span.clone(),
@@ -362,7 +369,7 @@ impl Compiler {
                 parameters
                     .iter()
                     .map(|(n, _)| Expr {
-                        kind: ExprKind::Var(n.clone()),
+                        kind: ExprKind::Var(n.name.clone()),
                         span: n.span.clone(),
                     })
                     .collect(),

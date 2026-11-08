@@ -127,6 +127,16 @@ wt saved[0],other[0],saved[-1];
 in n:Int,s:Str; wt n,s.len(),s[0],s[-1];
 s.push_back('!'); wt s.len();
 ''', b'7 '+b'x'*131100+b'\n', b'8 1 1999\n7 131100 x x\n131101\n'),
+    ('''fixed let s:="abc";
+{fixed let c:=s[0];fixed let f:=()=>{c='Z';c};wt f();}
+s.push_back('!');wt s;
+for i in 0..3 {
+ fixed let c:=s[i];c='A';
+ if i==1{continue;}
+ if i==2{break;}
+}
+s.push_back('?');wt s;
+''', b'', b'Z\nZbc!\nAAA!?\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

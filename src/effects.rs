@@ -429,7 +429,7 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
             };
             state.values.insert(result.id.clone(), value);
         }
-        Operation::Rebind { target, value } => {
+        Operation::Rebind { target, value, .. } => {
             let value = state.get(value);
             match target {
                 Place::Local(id) => {
@@ -498,7 +498,7 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
             };
             state.values.insert(call.result.id.clone(), returned);
         }
-        Operation::Release(_) => {}
+        Operation::Release(_) | Operation::AnnotateBinding { .. } => {}
     }
 }
 fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Summary {
@@ -786,6 +786,7 @@ mod tests {
                         value: Literal::Int(7),
                     },
                     I::Rebind {
+                        span: None,
                         target: Place::Local(local(0, "Int").id),
                         value: local(1, "Int"),
                     },
@@ -1045,6 +1046,7 @@ mod tests {
                 "Unit",
                 Some(vec![
                     I::Rebind {
+                        span: None,
                         target: Place::Field {
                             owner: param(0, "Box"),
                             index: 0,
@@ -1095,6 +1097,7 @@ mod tests {
             "Int",
             Some(vec![
                 I::Rebind {
+                    span: None,
                     target: Place::Field {
                         owner: param(0, "Box"),
                         index: 0,
@@ -1122,6 +1125,7 @@ mod tests {
                 "Int",
                 Some(vec![
                     I::Rebind {
+                        span: None,
                         target: Place::Field {
                             owner: param(0, "Box"),
                             index: 0,
@@ -1144,6 +1148,7 @@ mod tests {
                         },
                     },
                     I::Rebind {
+                        span: None,
                         target: Place::Field {
                             owner: param(0, "Box"),
                             index: 0,
@@ -1196,6 +1201,7 @@ mod tests {
                                 no: Body::default(),
                             },
                             I::Rebind {
+                                span: None,
                                 target: Place::Local(local(0, "Int").id),
                                 value: param(2, "Int"),
                             },

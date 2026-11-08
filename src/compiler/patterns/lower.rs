@@ -64,6 +64,7 @@ impl Compiler {
         let Some(((pattern, value), tail)) = tasks.split_first() else {
             for (name, slot) in &probe.bindings {
                 self.body.push(Instruction::Rebind {
+                    span: None,
                     target: Place::Local(slot.id.clone()),
                     value: bindings[&name.text].clone(),
                 });
@@ -181,6 +182,7 @@ impl Compiler {
             result = action(c)?;
             if !c.diverged {
                 c.body.push(Instruction::Rebind {
+                    span: None,
                     target: Place::Local(slot.clone()),
                     value: result.clone(),
                 });
@@ -288,6 +290,7 @@ impl Compiler {
                                 for (name, slot) in &probes[0].bindings {
                                     let current = c.find_var(name)?;
                                     c.body.push(Instruction::Rebind {
+                                        span: None,
                                         target: Place::Local(slot.id.clone()),
                                         value: Value {
                                             id: current.id,

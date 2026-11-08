@@ -1,8 +1,10 @@
 use crate::ast::{
-    Binding, Condition, Expr, ExprKind, Initializer, Name, Pattern, PatternKind, Span, Stmt,
+    Binding, BindingMode, Condition, DeclaredName, Expr, ExprKind, Initializer, Name, Pattern,
+    PatternKind, Span, Stmt,
 };
 use crate::hir::{Body, Call, Instruction, Literal, Place, Rvalue, Value, ValueId};
 use std::collections::{BTreeMap, BTreeSet};
+mod bindings;
 mod callables;
 mod containers;
 mod cpp;
@@ -24,7 +26,7 @@ struct Function {
     result: String,
     cpp: String,
     code: String,
-    body: Option<(Vec<Name>, Box<Stmt>)>,
+    body: Option<(Vec<DeclaredName>, Box<Stmt>)>,
     checked: Option<Body>,
 }
 #[derive(Clone)]
@@ -32,6 +34,7 @@ struct Variable {
     id: ValueId,
     ty: String,
     initialized: bool,
+    binding: Option<crate::hir::BindingInfo>,
 }
 #[derive(Clone)]
 struct LoopContext {
@@ -219,6 +222,11 @@ impl Compiler {
                         };
                         let mut names = BTreeSet::new();
                         for (param, ty) in params {
+                            if matches!(s, Stmt::Function(..))
+                                && let Some(annotation) = &param.binding
+                            {
+                                return Err(annotation.span.error("binding modifiers on extern parameters require a Rusk function body"));
+                            }
                             self.check_type(ty)?;
                             if !names.insert(&param.text) {
                                 return Err(param.span.error("duplicate parameter"));
@@ -381,7 +389,7 @@ impl Compiler {
         self.scopes = vec![BTreeMap::new()];
         self.body.clear();
         for (i, (param, ty)) in params.iter().zip(&f.params).enumerate() {
-            self.declare(
+            self.declare_annotated(
                 param,
                 ty.clone(),
                 Some(Value {
@@ -567,6 +575,7 @@ impl Compiler {
                 id: cpp,
                 ty,
                 initialized: value.is_some(),
+                binding: None,
             },
         );
         Ok(())
@@ -840,7 +849,7 @@ impl Compiler {
                     self.same(&ty, &value.ty, n.span())?;
                     self.declare_binding(n, value)?;
                 } else if let Binding::Name(name) = n {
-                    self.declare(name, ty, None)?;
+                    self.declare_annotated(name, ty, None)?;
                 } else {
                     return Err(n.span().error("tuple binding requires an initializer"));
                 }
@@ -1358,6 +1367,7 @@ impl Compiler {
                         let rhs = self.expr(right, Some(&ty))?;
                         self.same(&ty, &rhs.ty, &right.span)?;
                         self.body.push(Instruction::Rebind {
+                            span: Some(e.span.clone()),
                             target: Place::Field {
                                 owner: receiver,
                                 index,
@@ -1374,6 +1384,7 @@ impl Compiler {
                             let rhs = self.expr(right, Some(&item.ty))?;
                             self.same(&item.ty, &rhs.ty, &right.span)?;
                             self.body.push(Instruction::Rebind {
+                                span: Some(e.span.clone()),
                                 target: Place::Field {
                                     owner: array,
                                     index: position,
@@ -1404,7 +1415,9 @@ impl Compiler {
                         return Ok(Value::never());
                     }
                     self.same(&v.ty, &r.ty, &e.span)?;
+                    self.check_fixed_rebind(&v, &e.span)?;
                     self.body.push(Instruction::Rebind {
+                        span: Some(e.span.clone()),
                         target: Place::Local(v.id.clone()),
                         value: r,
                     });

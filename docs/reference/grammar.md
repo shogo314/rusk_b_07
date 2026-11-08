@@ -21,7 +21,7 @@
 次のキーワードは変数名などに使わないでください。
 
 ```text
-include struct enum match fn return extern type symbol let in wt
+include struct enum match fn return extern type symbol let fixed rebindable in wt
 if else for while loop break continue true false
 ```
 
@@ -52,7 +52,8 @@ continue_statement = "continue" [ identifier ] ";" ;
 ## 宣言・型・分解
 
 ```ebnf
-let_statement = "let" binding [ ":" type ] [ initialization expression ] ";" ;
+binding_modifier = "fixed" | "rebindable" ;
+let_statement = [ binding_modifier ] "let" binding [ ":" type ] [ initialization expression ] ";" ;
 initialization = ":=" | "=" ;
 binding       = identifier
               | "(" binding "," binding { "," binding } ")" ;
@@ -76,13 +77,15 @@ type_parameters = "<" identifier { "," identifier } ">" ;
 
 `Vec<Int>`、`Vec<Vec<Int>>`、`(Int, Str)`、`Pair<Int, Vec<Str>>` のように型を入れ子にできます。型の括弧はタプル型に使うため、単独の `(Int)` は型として使えません。タプル型・分解パターンは2要素以上です。
 
+`fixed` / `rebindable` の意味と初期化の検査は[名前の結び直しの制限](bindings.md)を参照してください。重複・相反する指定は拒否します。
+
 ## 関数と構造体
 
 ```ebnf
 function_definition = "fn" identifier [ type_parameters ]
                       "(" parameters ")" [ "->" type ] block ;
 parameters          = [ parameter { "," parameter } ] ;
-parameter           = identifier ":" type ;
+parameter           = [ binding_modifier ] identifier ":" type ;
 struct_definition   = "struct" identifier [ type_parameters ]
                       "{" { struct_field } "}" ;
 struct_field        = identifier ":" type ";" ;

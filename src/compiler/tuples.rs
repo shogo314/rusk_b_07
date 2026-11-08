@@ -109,7 +109,7 @@ impl Compiler {
     ) -> Result<(), String> {
         match binding {
             Binding::Name(name) if name.text == "_" => Ok(()),
-            Binding::Name(name) => self.declare(name, value.ty.clone(), Some(value)),
+            Binding::Name(name) => self.declare_annotated(name, value.ty.clone(), Some(value)),
             Binding::Tuple(bindings, span) => {
                 if !value.ty.starts_with("Tuple<") {
                     return Err(span.error(format!("expected a tuple, found '{}'", value.ty)));
@@ -261,7 +261,9 @@ impl Compiler {
             ExprKind::Var(name) => {
                 let target = self.find_var(name)?;
                 self.same(&target.ty, &value.ty, &left.span)?;
+                self.check_fixed_rebind(&target, &left.span)?;
                 self.body.push(Instruction::Rebind {
+                    span: Some(left.span.clone()),
                     target: Place::Local(target.id),
                     value: value.clone(),
                 });
@@ -278,6 +280,7 @@ impl Compiler {
                 let (index, ty) = self.field(&owner.ty, name)?;
                 self.same(&ty, &value.ty, &left.span)?;
                 self.body.push(Instruction::Rebind {
+                    span: Some(left.span.clone()),
                     target: Place::Field { owner, index },
                     value: value.clone(),
                 });
@@ -290,6 +293,7 @@ impl Compiler {
                     let item = self.tuple_item(&owner, position, &index.span)?;
                     self.same(&item.ty, &value.ty, &left.span)?;
                     self.body.push(Instruction::Rebind {
+                        span: Some(left.span.clone()),
                         target: Place::Field {
                             owner,
                             index: position,

@@ -25,6 +25,83 @@ pub struct Name {
     pub text: String,
     pub span: Span,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BindingMode {
+    Fixed,
+    Rebindable,
+}
+#[derive(Clone, Debug)]
+pub struct BindingAnnotation {
+    pub mode: BindingMode,
+    pub span: Span,
+}
+#[derive(Clone, Debug)]
+pub struct DeclaredName {
+    pub name: Name,
+    pub binding: Option<BindingAnnotation>,
+}
+impl DeclaredName {
+    pub fn plain(name: Name) -> Self {
+        Self {
+            name,
+            binding: None,
+        }
+    }
+}
+impl std::ops::Deref for DeclaredName {
+    type Target = Name;
+    fn deref(&self) -> &Name {
+        &self.name
+    }
+}
+fn binding_annotation(
+    modifiers: &g::BindingModifiers<'_>,
+) -> Result<Option<BindingAnnotation>, String> {
+    let mut result: Option<BindingAnnotation> = None;
+    for item in &modifiers.binding_modifiers_list {
+        let (mode, token) = match item.binding_modifier.as_ref() {
+            g::BindingModifier::Fixed(item) => (BindingMode::Fixed, &item.fixed),
+            g::BindingModifier::Rebindable(item) => (BindingMode::Rebindable, &item.rebindable),
+        };
+        let span = Span::token(token);
+        if let Some(previous) = &result {
+            let reason = if previous.mode == mode {
+                "duplicate binding modifier"
+            } else {
+                "conflicting binding modifiers"
+            };
+            return Err(format!(
+                "{}\n{}",
+                span.error(reason),
+                previous.span.error("previous binding modifier is here")
+            ));
+        }
+        result = Some(BindingAnnotation { mode, span });
+    }
+    Ok(result)
+}
+fn parameters(parameters: &g::Parameters<'_>) -> Result<Vec<(DeclaredName, Name)>, String> {
+    let Some(first) = &parameters.parameters_opt else {
+        return Ok(vec![]);
+    };
+    std::iter::once(first.parameter.as_ref())
+        .chain(
+            first
+                .parameters_opt_list
+                .iter()
+                .map(|p| p.parameter.as_ref()),
+        )
+        .map(|p| {
+            Ok((
+                DeclaredName {
+                    name: name(&p.identifier),
+                    binding: binding_annotation(&p.binding_modifiers)?,
+                },
+                type_name(&p.type_name),
+            ))
+        })
+        .collect()
+}
 fn name(n: &g::Identifier<'_>) -> Name {
     Name {
         text: n.identifier.text().into(),
@@ -102,10 +179,20 @@ fn type_name(t: &g::TypeName<'_>) -> Name {
 }
 #[derive(Clone, Debug)]
 pub enum Binding {
-    Name(Name),
+    Name(DeclaredName),
     Tuple(Vec<Binding>, Span),
 }
 impl Binding {
+    pub fn annotate(&mut self, annotation: &Option<BindingAnnotation>) {
+        match self {
+            Self::Name(name) => name.binding = annotation.clone(),
+            Self::Tuple(items, _) => {
+                for item in items {
+                    item.annotate(annotation);
+                }
+            }
+        }
+    }
     pub fn span(&self) -> &Span {
         match self {
             Self::Name(n) => &n.span,
@@ -115,7 +202,7 @@ impl Binding {
 }
 fn binding(b: &g::Binding<'_>) -> Binding {
     match b {
-        g::Binding::Identifier(n) => Binding::Name(name(&n.identifier)),
+        g::Binding::Identifier(n) => Binding::Name(DeclaredName::plain(name(&n.identifier))),
         g::Binding::LParenBindingCommaBindingBindingListRParen(t) => Binding::Tuple(
             std::iter::once(t.binding.as_ref())
                 .chain(std::iter::once(t.binding0.as_ref()))
@@ -182,7 +269,7 @@ pub enum ExprKind {
     Var(Name),
     Call(Name, Vec<Expr>),
     Invoke(Box<Expr>, Vec<Expr>),
-    Lambda(Vec<(Name, Name)>, Box<Expr>),
+    Lambda(Vec<(DeclaredName, Name)>, Box<Expr>),
     Binary(String, Box<Expr>, Box<Expr>),
     Unary(String, Box<Expr>),
     Assign(String, Box<Expr>, Box<Expr>),
@@ -201,11 +288,17 @@ pub enum Stmt {
     Type(Name, BTreeMap<String, String>),
     Function(
         Name,
-        Vec<(Name, Name)>,
+        Vec<(DeclaredName, Name)>,
         Option<Name>,
         BTreeMap<String, String>,
     ),
-    UserFunction(Name, Vec<Name>, Vec<(Name, Name)>, Option<Name>, Box<Stmt>),
+    UserFunction(
+        Name,
+        Vec<Name>,
+        Vec<(DeclaredName, Name)>,
+        Option<Name>,
+        Box<Stmt>,
+    ),
     Return(Span, Option<Expr>),
     Symbol(Name, BTreeMap<String, String>),
     Let(Binding, Option<Name>, Option<Initializer>),
@@ -329,19 +422,7 @@ fn simple_stmt(s: &g::SimpleStatement<'_>) -> Result<Stmt, String> {
         ),
         g::SimpleStatement::ExternFn(x) => {
             let x = &x.extern_fn;
-            let mut params = vec![];
-            if let Some(p) = &x.parameters.parameters_opt {
-                params.push((
-                    name(&p.parameter.identifier),
-                    type_name(&p.parameter.type_name),
-                ));
-                params.extend(p.parameters_opt_list.iter().map(|p| {
-                    (
-                        name(&p.parameter.identifier),
-                        type_name(&p.parameter.type_name),
-                    )
-                }));
-            }
+            let params = parameters(&x.parameters)?;
             Stmt::Function(
                 name(&x.identifier),
                 params,
@@ -351,19 +432,7 @@ fn simple_stmt(s: &g::SimpleStatement<'_>) -> Result<Stmt, String> {
         }
         g::SimpleStatement::Function(x) => {
             let x = &x.function;
-            let mut params = vec![];
-            if let Some(p) = &x.parameters.parameters_opt {
-                params.push((
-                    name(&p.parameter.identifier),
-                    type_name(&p.parameter.type_name),
-                ));
-                params.extend(p.parameters_opt_list.iter().map(|p| {
-                    (
-                        name(&p.parameter.identifier),
-                        type_name(&p.parameter.type_name),
-                    )
-                }));
-            }
+            let params = parameters(&x.parameters)?;
             Stmt::UserFunction(
                 name(&x.identifier),
                 x.function_opt
@@ -385,8 +454,10 @@ fn simple_stmt(s: &g::SimpleStatement<'_>) -> Result<Stmt, String> {
         ),
         g::SimpleStatement::Let(x) => {
             let x = &x.r#let;
+            let mut binding = binding(&x.binding);
+            binding.annotate(&binding_annotation(&x.binding_modifiers)?);
             Stmt::Let(
-                binding(&x.binding),
+                binding,
                 x.let_opt.as_ref().map(|t| type_name(&t.type_name)),
                 x.let_opt0
                     .as_ref()
@@ -949,19 +1020,7 @@ fn non_block_primary(e: &g::NonBlockPrimary<'_>) -> Result<Expr, String> {
 }
 
 fn lambda(e: &g::Lambda<'_>) -> Result<Expr, String> {
-    let mut parameters = vec![];
-    if let Some(params) = &e.parameters.parameters_opt {
-        parameters.push((
-            name(&params.parameter.identifier),
-            type_name(&params.parameter.type_name),
-        ));
-        for p in &params.parameters_opt_list {
-            parameters.push((
-                name(&p.parameter.identifier),
-                type_name(&p.parameter.type_name),
-            ));
-        }
-    }
+    let parameters = parameters(&e.parameters)?;
     Ok(Expr {
         kind: ExprKind::Lambda(parameters, Box::new(expr(&e.expr)?)),
         span: Span::token(&e.l_paren),
