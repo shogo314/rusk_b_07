@@ -67,8 +67,18 @@ pub(crate) struct BindingInfo {
     pub declaration: Span,
     pub annotation: crate::ast::BindingAnnotation,
 }
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct AccessInfo {
+    pub name: String,
+    pub declaration: Span,
+    pub annotation: crate::ast::AccessAnnotation,
+}
 #[derive(Clone, Debug)]
 pub(crate) enum Instruction {
+    AnnotateAccess {
+        value: Value,
+        info: AccessInfo,
+    },
     AnnotateBinding {
         value: Value,
         info: BindingInfo,
@@ -162,6 +172,7 @@ pub(crate) struct Function {
     pub result: String,
     pub body: Option<Body>,
     pub effects: crate::effects::Summary,
+    pub access: crate::readonly::Summary,
 }
 #[derive(Debug)]
 pub(crate) struct Program {

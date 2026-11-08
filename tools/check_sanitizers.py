@@ -137,6 +137,16 @@ for i in 0..3 {
 }
 s.push_back('?');wt s;
 ''', b'', b'Z\nZbc!\nAAA!?\n'),
+    ('''let text:="abc";
+{
+ readonly fixed let view:=text;
+ wt view[0],view.len();
+ let detached=view[0];detached='Q';wt detached;
+ let reader:=()=>view[0];wt reader();
+ text[0]='Z';wt reader();
+}
+text.push_back('!');wt text;
+''', b'', b'a 3\nQ\na\nZ\nZbc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

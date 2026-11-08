@@ -31,6 +31,14 @@ impl Compiler {
                             id: ValueId::Probe,
                             ty: ty.into(),
                             initialized: true,
+                            access: name
+                                .access
+                                .as_ref()
+                                .map(|annotation| crate::hir::AccessInfo {
+                                    name: name.text.clone(),
+                                    declaration: name.span.clone(),
+                                    annotation: annotation.clone(),
+                                }),
                             binding: name.binding.as_ref().map(|annotation| {
                                 crate::hir::BindingInfo {
                                     name: name.text.clone(),

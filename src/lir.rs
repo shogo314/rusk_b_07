@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 pub(crate) struct BlockId(pub usize);
 #[derive(Clone, Debug)]
 pub(crate) enum Operation {
+    AnnotateAccess {
+        value: Value,
+        info: hir::AccessInfo,
+    },
     AnnotateBinding {
         value: Value,
         info: hir::BindingInfo,
@@ -205,6 +209,10 @@ impl Lower {
                             value: value.clone(),
                             span: span.clone(),
                         },
+                        Instruction::AnnotateAccess { value, info } => Operation::AnnotateAccess {
+                            value: value.clone(),
+                            info: info.clone(),
+                        },
                         Instruction::AnnotateBinding { value, info } => {
                             Operation::AnnotateBinding {
                                 value: value.clone(),
@@ -258,6 +266,7 @@ pub(crate) struct ProgramFunction {
     pub result: String,
     pub body: Option<Function>,
     pub effects: crate::effects::Summary,
+    pub access: crate::readonly::Summary,
 }
 #[derive(Debug)]
 pub(crate) struct Program {
@@ -278,6 +287,7 @@ pub(crate) fn lower_program(program: &hir::Program) -> Program {
                 result: f.result.clone(),
                 body: f.body.as_ref().map(lower),
                 effects: f.effects.clone(),
+                access: f.access.clone(),
             })
             .collect(),
         main: lower(&program.main),
@@ -295,6 +305,7 @@ impl Program {
             }
             f.effects
                 .validate_signature(&f.params, &f.result, &self.types, f.body.is_some())?;
+            f.access.validate(&f.result, &self.types)?;
             if let Some(body) = &f.body {
                 self.validate_body(body, &f.params, &f.result, true)?;
                 crate::bindings::validate(body).map_err(|error| {
@@ -349,6 +360,7 @@ impl Program {
                 Err("invalid LIR jump target".into())
             }
         };
+        let mut access_bindings = std::collections::BTreeSet::new();
         for block in &body.blocks {
             for op in &block.instructions {
                 match op {
@@ -416,6 +428,14 @@ impl Program {
                     }
                     Operation::Release(ids) => release(ids)?,
                     Operation::AnnotateBinding { value: v, .. } => value(v)?,
+                    Operation::AnnotateAccess { value: v, .. } => {
+                        value(v)?;
+                        if !matches!(v.id, ValueId::Local(_))
+                            || !access_bindings.insert(v.id.clone())
+                        {
+                            return Err("invalid or duplicate LIR access annotation".into());
+                        }
+                    }
                 }
             }
             match &block.terminator {

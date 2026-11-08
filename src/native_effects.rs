@@ -9,6 +9,30 @@ pub(crate) fn contract(
     result: &str,
     types: &BTreeMap<String, crate::hir::Type>,
 ) -> Result<Summary, String> {
+    fn builtin_value(ty: &str, types: &BTreeMap<String, crate::hir::Type>) -> bool {
+        match types.get(ty) {
+            Some(crate::hir::Type::Primitive) => {
+                matches!(ty, "Int" | "Bool" | "Char" | "Str" | "Unit")
+            }
+            Some(crate::hir::Type::Vector(element)) => builtin_value(element, types),
+            _ => false,
+        }
+    }
+    let specification = match specification {
+        "deep_read_fresh" | "deep_resize_first" | "deep_io_write" => {
+            // Generated record copies can invoke user-defined copy functions;
+            // foreign data can also supply arbitrary target-language helpers.
+            if parameters.iter().any(|ty| !builtin_value(ty, types)) {
+                return Ok(Summary::opaque(parameters.len()));
+            }
+            match specification {
+                "deep_read_fresh" => "checked_read_fresh",
+                "deep_resize_first" => "checked_resize_first",
+                _ => "io_write",
+            }
+        }
+        other => other,
+    };
     let mut summary = Summary::native(parameters.len());
     for parameter in &mut summary.parameters {
         parameter.read = Effect::May;
@@ -43,6 +67,42 @@ pub(crate) fn contract(
                 }
             } else if result != "Unit" {
                 return Err("native output contract requires Unit result".into());
+            }
+        }
+        "resize_retain_second" | "replace_element" => {
+            let source = if specification == "replace_element" {
+                2
+            } else {
+                1
+            };
+            if parameters.len() != source + 1 {
+                return Err("native element store contract has invalid arity".into());
+            }
+            let Some(crate::hir::Type::Vector(element)) = types.get(&parameters[0]) else {
+                return Err("native element store requires a vector".into());
+            };
+            if *element != parameters[source] || (source == 2 && parameters[1] != "Int") {
+                return Err("native element store type mismatch".into());
+            }
+            summary.parameters[0].write = Effect::May;
+            summary.parameters[0].structural = if source == 1 { Effect::May } else { Effect::No };
+            summary.parameters[source].escape = Effect::May;
+            summary.parameters[source].retained = Effect::May;
+            if source == 1 {
+                if result != "Unit" {
+                    return Err("native append requires Unit result".into());
+                }
+            } else {
+                if result != element {
+                    return Err("native element store result mismatch".into());
+                }
+                summary.may_fail = Effect::May;
+                summary.returned.fresh = false;
+                summary.returned.aliases.insert(ReturnAlias {
+                    result_path: vec![],
+                    parameter: source,
+                    parameter_path: vec![],
+                });
             }
         }
         "element" => {
@@ -145,5 +205,50 @@ mod tests {
         ] {
             assert!(contract(spec, &args, result, &types()).is_err(), "{spec}");
         }
+    }
+    #[test]
+    fn vector_stores_retain_the_source_and_deep_operations_do_not_trust_user_helpers() {
+        let mut types = types();
+        let append = contract(
+            "resize_retain_second",
+            &["Vec<Int>".into(), "Int".into()],
+            "Unit",
+            &types,
+        )
+        .unwrap();
+        assert_eq!(append.parameters[0].write, Effect::May);
+        assert_eq!(append.parameters[1].write, Effect::No);
+        assert_eq!(append.parameters[1].retained, Effect::May);
+        let store = contract(
+            "replace_element",
+            &["Vec<Int>".into(), "Int".into(), "Int".into()],
+            "Int",
+            &types,
+        )
+        .unwrap();
+        assert_eq!(store.parameters[0].structural, Effect::No);
+        assert_eq!(store.returned.aliases.first().unwrap().parameter, 2);
+        let copy = contract("deep_read_fresh", &["Vec<Int>".into()], "Vec<Int>", &types).unwrap();
+        assert!(copy.returned.fresh);
+        assert_eq!(copy.parameters[0].write, Effect::No);
+        types.insert(
+            "Custom".into(),
+            Type::Record(vec![("x".into(), "Int".into())]),
+        );
+        types.insert("Vec<Custom>".into(), Type::Vector("Custom".into()));
+        for spec in ["deep_read_fresh", "deep_resize_first", "deep_io_write"] {
+            let opaque = contract(spec, &["Vec<Custom>".into()], "Vec<Custom>", &types).unwrap();
+            assert_eq!(opaque.source, SummarySource::Opaque);
+            assert_eq!(opaque.parameters[0].write, Effect::Unknown);
+        }
+        assert!(
+            contract(
+                "replace_element",
+                &["Vec<Int>".into(), "Str".into(), "Int".into()],
+                "Int",
+                &types
+            )
+            .is_err()
+        );
     }
 }

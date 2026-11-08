@@ -2,7 +2,7 @@ use crate::rusk_grammar_trait as g;
 use parol_runtime::Token;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Span {
     pub file: String,
     pub line: u32,
@@ -35,16 +35,28 @@ pub struct BindingAnnotation {
     pub mode: BindingMode,
     pub span: Span,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum AccessMode {
+    Readonly,
+    Mutable,
+}
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct AccessAnnotation {
+    pub mode: AccessMode,
+    pub span: Span,
+}
 #[derive(Clone, Debug)]
 pub struct DeclaredName {
     pub name: Name,
     pub binding: Option<BindingAnnotation>,
+    pub access: Option<AccessAnnotation>,
 }
 impl DeclaredName {
     pub fn plain(name: Name) -> Self {
         Self {
             name,
             binding: None,
+            access: None,
         }
     }
 }
@@ -54,31 +66,70 @@ impl std::ops::Deref for DeclaredName {
         &self.name
     }
 }
-fn binding_annotation(
+fn annotations(
     modifiers: &g::BindingModifiers<'_>,
-) -> Result<Option<BindingAnnotation>, String> {
-    let mut result: Option<BindingAnnotation> = None;
+) -> Result<(Option<BindingAnnotation>, Option<AccessAnnotation>), String> {
+    let mut binding: Option<BindingAnnotation> = None;
+    let mut access: Option<AccessAnnotation> = None;
     for item in &modifiers.binding_modifiers_list {
-        let (mode, token) = match item.binding_modifier.as_ref() {
-            g::BindingModifier::Fixed(item) => (BindingMode::Fixed, &item.fixed),
-            g::BindingModifier::Rebindable(item) => (BindingMode::Rebindable, &item.rebindable),
-        };
-        let span = Span::token(token);
-        if let Some(previous) = &result {
-            let reason = if previous.mode == mode {
+        match item.binding_modifier.as_ref() {
+            g::BindingModifier::Fixed(item) => {
+                set_binding(&mut binding, BindingMode::Fixed, Span::token(&item.fixed))?
+            }
+            g::BindingModifier::Rebindable(item) => set_binding(
+                &mut binding,
+                BindingMode::Rebindable,
+                Span::token(&item.rebindable),
+            )?,
+            g::BindingModifier::Readonly(item) => set_access(
+                &mut access,
+                AccessMode::Readonly,
+                Span::token(&item.readonly),
+            )?,
+            g::BindingModifier::Mutable(item) => {
+                set_access(&mut access, AccessMode::Mutable, Span::token(&item.mutable))?
+            }
+        }
+    }
+    Ok((binding, access))
+}
+fn set_binding(
+    previous: &mut Option<BindingAnnotation>,
+    mode: BindingMode,
+    span: Span,
+) -> Result<(), String> {
+    if let Some(old) = previous {
+        return Err(format!(
+            "{}\n{}",
+            span.error(if old.mode == mode {
                 "duplicate binding modifier"
             } else {
                 "conflicting binding modifiers"
-            };
-            return Err(format!(
-                "{}\n{}",
-                span.error(reason),
-                previous.span.error("previous binding modifier is here")
-            ));
-        }
-        result = Some(BindingAnnotation { mode, span });
+            }),
+            old.span.error("previous binding modifier is here")
+        ));
     }
-    Ok(result)
+    *previous = Some(BindingAnnotation { mode, span });
+    Ok(())
+}
+fn set_access(
+    previous: &mut Option<AccessAnnotation>,
+    mode: AccessMode,
+    span: Span,
+) -> Result<(), String> {
+    if let Some(old) = previous {
+        return Err(format!(
+            "{}\n{}",
+            span.error(if old.mode == mode {
+                "duplicate access modifier"
+            } else {
+                "conflicting access modifiers"
+            }),
+            old.span.error("previous access modifier is here")
+        ));
+    }
+    *previous = Some(AccessAnnotation { mode, span });
+    Ok(())
 }
 fn parameters(parameters: &g::Parameters<'_>) -> Result<Vec<(DeclaredName, Name)>, String> {
     let Some(first) = &parameters.parameters_opt else {
@@ -92,10 +143,12 @@ fn parameters(parameters: &g::Parameters<'_>) -> Result<Vec<(DeclaredName, Name)
                 .map(|p| p.parameter.as_ref()),
         )
         .map(|p| {
+            let (binding, access) = annotations(&p.binding_modifiers)?;
             Ok((
                 DeclaredName {
                     name: name(&p.identifier),
-                    binding: binding_annotation(&p.binding_modifiers)?,
+                    binding,
+                    access,
                 },
                 type_name(&p.type_name),
             ))
@@ -183,12 +236,19 @@ pub enum Binding {
     Tuple(Vec<Binding>, Span),
 }
 impl Binding {
-    pub fn annotate(&mut self, annotation: &Option<BindingAnnotation>) {
+    pub fn annotate(
+        &mut self,
+        annotation: &Option<BindingAnnotation>,
+        access: &Option<AccessAnnotation>,
+    ) {
         match self {
-            Self::Name(name) => name.binding = annotation.clone(),
+            Self::Name(name) => {
+                name.binding = annotation.clone();
+                name.access = access.clone();
+            }
             Self::Tuple(items, _) => {
                 for item in items {
-                    item.annotate(annotation);
+                    item.annotate(annotation, access);
                 }
             }
         }
@@ -455,7 +515,8 @@ fn simple_stmt(s: &g::SimpleStatement<'_>) -> Result<Stmt, String> {
         g::SimpleStatement::Let(x) => {
             let x = &x.r#let;
             let mut binding = binding(&x.binding);
-            binding.annotate(&binding_annotation(&x.binding_modifiers)?);
+            let (mode, access) = annotations(&x.binding_modifiers)?;
+            binding.annotate(&mode, &access);
             Stmt::Let(
                 binding,
                 x.let_opt.as_ref().map(|t| type_name(&t.type_name)),

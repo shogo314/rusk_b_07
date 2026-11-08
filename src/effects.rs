@@ -195,6 +195,9 @@ impl Summary {
             may_diverge: Effect::Unknown,
         }
     }
+    pub fn opaque(parameters: usize) -> Self {
+        Self::unknown(parameters, SummarySource::Opaque)
+    }
     pub fn native(parameters: usize) -> Self {
         Self {
             source: SummarySource::NativeContract,
@@ -262,36 +265,9 @@ impl Summary {
         if has_body && self.source == SummarySource::NativeContract {
             return Err("native contract requires an opaque body".into());
         }
-        let project = |root: &str, path: &[Projection]| -> Result<String, String> {
-            let mut ty = root.to_string();
-            for projection in path {
-                ty = match (types.get(&ty), projection) {
-                    (Some(crate::hir::Type::Vector(element)), Projection::Element) => {
-                        Some(element.clone())
-                    }
-                    (Some(crate::hir::Type::Primitive), Projection::Element) if ty == "Str" => {
-                        Some("Char".into())
-                    }
-                    (Some(kind), Projection::Field(index)) => kind
-                        .fields()
-                        .and_then(|fields| fields.get(*index))
-                        .map(|(_, ty)| ty.clone()),
-                    (
-                        Some(crate::hir::Type::Enum(variants)),
-                        Projection::VariantField { variant, field },
-                    ) => variants
-                        .get(*variant)
-                        .and_then(|(_, fields)| fields.get(*field))
-                        .cloned(),
-                    _ => None,
-                }
-                .ok_or("invalid effect summary projection")?;
-            }
-            Ok(ty)
-        };
         for alias in &self.returned.aliases {
-            let source = project(&parameters[alias.parameter], &alias.parameter_path)?;
-            let target = project(result, &alias.result_path)?;
+            let source = project_type(&parameters[alias.parameter], &alias.parameter_path, types)?;
+            let target = project_type(result, &alias.result_path, types)?;
             if source != target {
                 return Err("effect summary alias type mismatch".into());
             }
@@ -323,6 +299,35 @@ impl Summary {
             }
         }
     }
+}
+pub(crate) fn project_type(
+    root: &str,
+    path: &[Projection],
+    types: &BTreeMap<String, crate::hir::Type>,
+) -> Result<String, String> {
+    let mut ty = root.to_string();
+    for projection in path {
+        ty = match (types.get(&ty), projection) {
+            (Some(crate::hir::Type::Vector(element)), Projection::Element) => Some(element.clone()),
+            (Some(crate::hir::Type::Primitive), Projection::Element) if ty == "Str" => {
+                Some("Char".into())
+            }
+            (Some(kind), Projection::Field(index)) => kind
+                .fields()
+                .and_then(|fields| fields.get(*index))
+                .map(|(_, ty)| ty.clone()),
+            (
+                Some(crate::hir::Type::Enum(variants)),
+                Projection::VariantField { variant, field },
+            ) => variants
+                .get(*variant)
+                .and_then(|(_, fields)| fields.get(*field))
+                .cloned(),
+            _ => None,
+        }
+        .ok_or("invalid effect summary projection")?;
+    }
+    Ok(ty)
 }
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 struct State {
@@ -498,7 +503,9 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
             };
             state.values.insert(call.result.id.clone(), returned);
         }
-        Operation::Release(_) | Operation::AnnotateBinding { .. } => {}
+        Operation::Release(_)
+        | Operation::AnnotateBinding { .. }
+        | Operation::AnnotateAccess { .. } => {}
     }
 }
 fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Summary {
@@ -695,6 +702,7 @@ mod tests {
             params: params.iter().map(|s| (*s).into()).collect(),
             result: result.into(),
             effects: Summary::unanalyzed(params.len()),
+            access: crate::readonly::Summary::default(),
             body: body.map(|instructions| Body { instructions }),
         }
     }

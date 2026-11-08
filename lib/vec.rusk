@@ -5,6 +5,7 @@ extern fn __vec_new__() -> Vector {
     code: "Obj<NativeVec> vector_function_0([[maybe_unused]] Loc loc) { return make_obj<NativeVec>(NativeVec{}); }",
 }
 extern fn __vec_repeat__(initial: Element, count: Int) -> Vector {
+    effects: "deep_read_fresh",
     cpp_name: "vector_function_1",
     code: "Obj<NativeVec> vector_function_1(Obj<NativeElement> initial, Obj<std::int64_t> count, [[maybe_unused]] Loc loc) { if(*count<0) fail(loc,\"negative array length\"); auto a=make_obj<NativeVec>(NativeVec{}); if(static_cast<__int128>(*count)>static_cast<__int128>(a->max_size())) fail(loc,\"array length out of range\"); a->reserve(static_cast<std::size_t>(*count)); for(std::int64_t i=0;i<*count;++i) a->push_back(deep_copy(initial,loc)); return a; }",
 }
@@ -14,6 +15,7 @@ extern fn len(a: Vector) -> Int {
     code: "Obj<std::int64_t> vector_function_2(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(checked_int(static_cast<__int128>(a->size()),loc)); }",
 }
 extern fn push_back(a: Vector, x: Element) {
+    effects: "resize_retain_second",
     cpp_name: "vector_function_3",
     code: "void vector_function_3(Obj<NativeVec> a, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { a->push_back(x); ++a->version; }",
 }
@@ -23,14 +25,17 @@ extern fn __getitem__(a: Vector, i: Int) -> Element {
     code: "Obj<NativeElement> vector_function_4(Obj<NativeVec> a, Obj<std::int64_t> i, [[maybe_unused]] Loc loc) { return (*a)[checked_index(a->size(),*i,loc)]; }",
 }
 extern fn __setitem__(a: Vector, i: Int, x: Element) -> Element {
+    effects: "replace_element",
     cpp_name: "vector_function_5",
     code: "Obj<NativeElement> vector_function_5(Obj<NativeVec> a, Obj<std::int64_t> i, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { (*a)[checked_index(a->size(),*i,loc)]=x; return x; }",
 }
 extern fn copy(a: Vector) -> Vector {
+    effects: "deep_read_fresh",
     cpp_name: "vector_function_6",
     code: "Obj<NativeVec> vector_function_6(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return deep_copy(a,loc); }",
 }
 extern fn __assign__(a: Vector, b: Vector) {
+    effects: "deep_resize_first",
     cpp_name: "vector_function_7",
     code: "void vector_function_7(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { auto snapshot=deep_copy(b,loc); a->assign(snapshot->begin(),snapshot->end()); ++a->version; }",
 }
@@ -40,6 +45,7 @@ extern fn __bool__(a: Vector) -> Bool {
     code: "Obj<bool> vector_function_8(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return make_obj<bool>(!a->empty()); }",
 }
 extern fn __write__(a: Vector) {
+    effects: "deep_io_write",
     cpp_name: "vector_function_9",
     code: "void vector_function_9(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { write_value(a); }",
 }

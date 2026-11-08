@@ -23,6 +23,22 @@ impl Compiler {
                 info,
             });
         }
+        if let Some(annotation) = &name.access {
+            let info = crate::hir::AccessInfo {
+                name: name.text.clone(),
+                declaration: name.span.clone(),
+                annotation: annotation.clone(),
+            };
+            let variable = self.scopes.last_mut().unwrap().get_mut(&name.text).unwrap();
+            variable.access = Some(info.clone());
+            self.body.push(Instruction::AnnotateAccess {
+                value: Value {
+                    id: variable.id.clone(),
+                    ty: variable.ty.clone(),
+                },
+                info,
+            });
+        }
         Ok(())
     }
     pub(super) fn check_fixed_rebind(

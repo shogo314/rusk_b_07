@@ -6,6 +6,7 @@ struct Check<'a> {
     values: BTreeMap<ValueId, String>,
     loops: BTreeSet<LoopId>,
     bindings: BTreeSet<ValueId>,
+    access_bindings: BTreeSet<ValueId>,
     result: &'a str,
     caller_location: bool,
 }
@@ -173,6 +174,14 @@ impl Check<'_> {
                     };
                     self.same(ty, &value.ty)?;
                 }
+                Instruction::AnnotateAccess { value, .. } => {
+                    self.value(value)?;
+                    if !matches!(value.id, ValueId::Local(_))
+                        || !self.access_bindings.insert(value.id.clone())
+                    {
+                        return Err("invalid or duplicate IR access annotation".into());
+                    }
+                }
                 Instruction::AnnotateBinding { value, .. } => {
                     self.value(value)?;
                     if !matches!(value.id, ValueId::Local(_)) {
@@ -235,6 +244,7 @@ impl Program {
             values: BTreeMap::new(),
             loops: BTreeSet::new(),
             bindings: BTreeSet::new(),
+            access_bindings: BTreeSet::new(),
             result: "Unit",
             caller_location: false,
         };
@@ -278,6 +288,7 @@ impl Program {
             }
         }
         for (id, f) in self.functions.iter().enumerate() {
+            f.access.validate(&f.result, &self.types)?;
             f.effects
                 .validate_signature(&f.params, &f.result, &self.types, f.body.is_some())?;
             if id != f.id {
@@ -291,6 +302,7 @@ impl Program {
                     values: BTreeMap::new(),
                     loops: BTreeSet::new(),
                     bindings: BTreeSet::new(),
+                    access_bindings: BTreeSet::new(),
                     result: "Unit",
                     caller_location: true,
                 }
@@ -336,6 +348,7 @@ mod tests {
                 id: 0,
                 name: "identity".into(),
                 effects: crate::effects::Summary::unanalyzed(1),
+                access: crate::readonly::Summary::default(),
                 params: vec!["Int".into()],
                 result: "Int".into(),
                 body: None,

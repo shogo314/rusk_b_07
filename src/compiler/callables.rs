@@ -76,11 +76,18 @@ impl Compiler {
                 info: info.clone(),
             });
         }
+        if let Some(info) = &variable.access {
+            context.prologue.push(Instruction::AnnotateAccess {
+                value: value.clone(),
+                info: info.clone(),
+            });
+        }
         let local = Variable {
             id: value.id,
             ty: value.ty,
             initialized: true,
             binding: variable.binding.clone(),
+            access: variable.access.clone(),
         };
         self.capture_contexts
             .last_mut()

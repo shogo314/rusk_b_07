@@ -8,7 +8,7 @@
 
 ## 現在の状態
 
-β07は開発開始段階です。言語機能と標準APIは完成したβ06を引き継ぎ、変更・副作用・共有・脱出の情報をIRで明示・解析し、一時参照の借用と非脱出スカラーの値保持などへ利用します。任意の引数・ローカル変数の注釈としてreadonly/mutable・fixed/rebindable、引数にはnoescape/escapeも導入する計画です。[β07の要件](design/beta07.md)と[開始点・実装方針](docs/development/beta07.md)を参照してください。関数の効果と戻り値の共有元を求める初期解析を実装中です。fixed/rebindableの構文と契約検査は実装済みです。readonly/mutable・noescape/escapeと、新しい借用・スカラー最適化は未実装です。
+β07は開発開始段階です。言語機能と標準APIは完成したβ06を引き継ぎ、変更・副作用・共有・脱出の情報をIRで明示・解析し、一時参照の借用と非脱出スカラーの値保持などへ利用します。任意の引数・ローカル変数の注釈としてreadonly/mutable・fixed/rebindable、引数にはnoescape/escapeも導入する計画です。[β07の要件](design/beta07.md)と[開始点・実装方針](docs/development/beta07.md)を参照してください。関数の効果と戻り値の共有元を求める初期解析を実装中です。fixed/rebindableとreadonly/mutableの構文・初期の契約検査は実装済みです。noescape/escapeと、新しい借用・スカラー最適化は未実装です。
 
 β06では[パターン分岐・ガード・if let](docs/reference/beta06.md)を追加しています。入れ子のenum、タプル・構造体、定数、orパターン、matchガード、文と式のif let、while letに対応します。[最小・最大演算子](docs/reference/minmax.md)にも対応します。[β06の要件](design/beta06.md)を参照してください。
 
@@ -18,7 +18,7 @@ Rust と Parol で、競技プログラミングの基本問題を記述でき�
 
 配列は基本型・構造体・タプル・多次元配列に対応し、一括入力、ソート、二分探索を備えます。ASCII 文字列の添字更新・連結・型変換も使えます。配列の合計、ソートと探索、グリッド BFS、再帰による剰余累乗の実行例は [`examples/prototype/`](examples/prototype/) にあります。
 
-プロトタイプの対象範囲と検証手順は [開発ガイド](docs/development/index.md) を参照してください。型引数を持つ関数・構造体の具体化、タプルと分解、`include` によるファイル分割に対応しています。β03ではバッファ入出力と基本値の一時結果の確保削減、比較用の `--no-opt` を追加しています。[実装方式と性能測定](docs/development/beta03.md) を参照してください。β04では無名関数の捕捉と静的な受け渡し、遅延map/filter、集計・探索・キー付きソート、優先度付きキュー・汎用セグメント木にも対応します。[文法と捕捉](docs/reference/beta04.md) と [API](docs/library/beta04.md) を参照してください。内側の名前付き関数、浮動小数点、readonly、再帰型などは未実装です。設計ノートには検討中・保留中の案も含まれます。
+プロトタイプの対象範囲と検証手順は [開発ガイド](docs/development/index.md) を参照してください。型引数を持つ関数・構造体の具体化、タプルと分解、`include` によるファイル分割に対応しています。β03ではバッファ入出力と基本値の一時結果の確保削減、比較用の `--no-opt` を追加しています。[実装方式と性能測定](docs/development/beta03.md) を参照してください。β04では無名関数の捕捉と静的な受け渡し、遅延map/filter、集計・探索・キー付きソート、優先度付きキュー・汎用セグメント木にも対応します。[文法と捕捉](docs/reference/beta04.md) と [API](docs/library/beta04.md) を参照してください。内側の名前付き関数、浮動小数点、再帰型などは未実装です。設計ノートには検討中・保留中の案も含まれます。
 
 [AtCoderの解答例](examples/atcoder/README.md) は100問を収録しています。整数・文字列処理、全探索、ソート、シミュレーション、DP、グリッド処理を使い、公式サンプル279件を `cargo test --locked --test atcoder` で検証します。
 

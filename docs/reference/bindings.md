@@ -27,7 +27,7 @@ let next := (fixed value: Int) => value + 1;
 
 引数の指定は、その関数内の仮引数名に対する制限です。呼び出し元の名前へ制限を付け加えません。注釈だけでオーバーロードを区別することもできません。
 
-`fixed fixed` のような重複や `fixed rebindable` のような相反する指定はエラーです。外部関数の引数、構造体のフィールド、`in`・`for`・パターンの束縛には指定できません。`readonly` / `mutable` と `noescape` / `escape` は今後の実装対象です。
+`fixed fixed` のような重複や `fixed rebindable` のような相反する指定はエラーです。外部関数の引数、構造体のフィールド、`in`・`for`・パターンの束縛には指定できません。[readonly / mutable](access.md) との組み合わせにも対応します。`noescape` / `escape` は今後の実装対象です。
 
 ## 中身の更新と別名
 

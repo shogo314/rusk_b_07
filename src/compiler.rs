@@ -35,6 +35,7 @@ struct Variable {
     ty: String,
     initialized: bool,
     binding: Option<crate::hir::BindingInfo>,
+    access: Option<crate::hir::AccessInfo>,
 }
 #[derive(Clone)]
 struct LoopContext {
@@ -227,6 +228,11 @@ impl Compiler {
                             {
                                 return Err(annotation.span.error("binding modifiers on extern parameters require a Rusk function body"));
                             }
+                            if matches!(s, Stmt::Function(..))
+                                && let Some(annotation) = &param.access
+                            {
+                                return Err(annotation.span.error("access modifiers on extern parameters require a Rusk function body"));
+                            }
                             self.check_type(ty)?;
                             if !names.insert(&param.text) {
                                 return Err(param.span.error("duplicate parameter"));
@@ -347,6 +353,7 @@ impl Compiler {
                     params: f.params.clone(),
                     result: f.result.clone(),
                     body: f.checked.clone(),
+                    access: crate::readonly::Summary::default(),
                     effects: self
                         .native_contracts
                         .get(&id)
@@ -364,6 +371,13 @@ impl Compiler {
         for (id, summary) in summaries.into_iter().enumerate() {
             hir.functions[id].effects = summary.clone();
             lir.functions[id].effects = summary;
+        }
+        hir.validate()?;
+        lir.validate()?;
+        let access = crate::readonly::analyze(&lir)?;
+        for (id, summary) in access.into_iter().enumerate() {
+            hir.functions[id].access = summary.clone();
+            lir.functions[id].access = summary;
         }
         hir.validate()?;
         lir.validate()?;
@@ -576,6 +590,7 @@ impl Compiler {
                 ty,
                 initialized: value.is_some(),
                 binding: None,
+                access: None,
             },
         );
         Ok(())

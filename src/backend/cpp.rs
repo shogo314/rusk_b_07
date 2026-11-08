@@ -148,7 +148,7 @@ pub(crate) fn emit(
                 Instruction::StoreBool { target, value } => {
                     out += &format!("*{}=*{};\n", target.id, value.id)
                 }
-                Instruction::AnnotateBinding { .. } => {}
+                Instruction::AnnotateBinding { .. } | Instruction::AnnotateAccess { .. } => {}
                 Instruction::Release(values) => out += &release(values),
                 Instruction::Call(call) => {
                     let info = &functions[call.function];
