@@ -202,3 +202,72 @@ fn errors_precede_output_and_ir_keeps_declared_and_returned_restrictions() {
         }
     }
 }
+
+#[test]
+fn diagnostics_name_the_checked_binding_without_claiming_an_assignment_history() {
+    for source in [
+        "readonly let original:=1;let alias:=original;alias=2;",
+        "readonly let original:=1;let alias:=0;alias:=original;alias=2;",
+        "readonly let original:=1;let alias:=original;{let alias:=0;wt alias;}alias=2;",
+    ] {
+        let case = Case::new(source);
+        for stage in ["hir", "lir", "cpp"] {
+            let output = case.compile_with_options(&["--emit", stage]);
+            let message = String::from_utf8(output.stderr).unwrap();
+            assert!(!output.status.success());
+            assert!(
+                message.contains("readonly access originates at 'original'")
+                    && message.contains("checked access:")
+                    && message.contains("access uses binding 'alias'"),
+                "{message}"
+            );
+            assert!(!case.0.join("main.cpp").exists());
+        }
+    }
+}
+
+#[test]
+fn diagnostics_describe_fields_getters_and_field_rebinding() {
+    for (source, expected) in [
+        (
+            "struct Box{value:Int;}readonly let box:=Box{value:1};box.value=2;",
+            "access selects field 'value' of 'Box'",
+        ),
+        (
+            "struct Box{value:Int;}readonly let box:=Box{value:1};box.value:=2;",
+            "access uses binding 'box'",
+        ),
+        (
+            "struct Box{value:Int;}fn get(b:Box)->Int{return b.value;}readonly let box:=Box{value:1};get(box)=2;",
+            "access uses result of 'get'",
+        ),
+        (
+            "readonly let alias:=1;let change:=()=>{alias=2;};change();",
+            "access uses captured binding 'alias'",
+        ),
+    ] {
+        let case = Case::new(source);
+        let output = case.compile();
+        let message = String::from_utf8(output.stderr).unwrap();
+        assert!(!output.status.success());
+        assert!(
+            message.contains("readonly modifier is here") && message.contains(expected),
+            "{message}"
+        );
+    }
+}
+
+#[test]
+fn checked_access_locations_distinguish_shadowed_bindings() {
+    let case = Case::new(
+        "readonly let original:=1;\nlet alias:=0;\n{let alias:=original;\nalias=2;}\nwt alias;",
+    );
+    let output = case.compile();
+    let message = String::from_utf8(output.stderr).unwrap();
+    assert!(!output.status.success());
+    let checked = message.split("checked access:").nth(1).unwrap();
+    assert!(
+        checked.contains("main.rusk:3:") && !checked.contains("main.rusk:2:"),
+        "{message}"
+    );
+}

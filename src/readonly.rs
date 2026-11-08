@@ -8,6 +8,7 @@ use crate::{
     lir::{self, Operation, Terminator},
 };
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+mod diagnostic;
 mod heap;
 use heap::{Heap, Reference};
 
@@ -195,7 +196,7 @@ fn operation(
     summaries: &[Summary],
     declarations: &BTreeMap<ValueId, AccessInfo>,
     check: bool,
-) -> Result<(), String> {
+) -> Result<(), diagnostic::Failure> {
     match op {
         Operation::AnnotateAccess { value, info } => {
             if info.annotation.mode == AccessMode::Readonly {
@@ -277,15 +278,17 @@ fn operation(
                 Place::Field { owner, index } => {
                     let owner_access = state.get(owner).project_root();
                     if check {
-                        owner_access.check(
-                            span.as_ref().unwrap_or(&Span {
-                                file: "<IR>".into(),
-                                line: 1,
-                                column: 1,
-                            }),
-                            "field or tuple element rebinding",
-                            false,
-                        )?;
+                        owner_access
+                            .check(
+                                span.as_ref().unwrap_or(&Span {
+                                    file: "<IR>".into(),
+                                    line: 1,
+                                    column: 1,
+                                }),
+                                "field or tuple element rebinding",
+                                false,
+                            )
+                            .map_err(|error| diagnostic::Failure::new(error, owner))?;
                     }
                     if state.objects.store(
                         &state.reference(owner),
@@ -306,11 +309,13 @@ fn operation(
             for (index, (actual, effect)) in args.iter().zip(&callee.effects.parameters).enumerate()
             {
                 if check && (effect.write != Effect::No || effect.structural != Effect::No) {
-                    actual.check(
-                        &call.span,
-                        &format!("argument {} of '{}'", index + 1, callee.name),
-                        effect.write == Effect::Unknown || effect.structural == Effect::Unknown,
-                    )?;
+                    actual
+                        .check(
+                            &call.span,
+                            &format!("argument {} of '{}'", index + 1, callee.name),
+                            effect.write == Effect::Unknown || effect.structural == Effect::Unknown,
+                        )
+                        .map_err(|error| diagnostic::Failure::new(error, &call.args[index]))?;
                 }
                 if effect.retained != Effect::No {
                     state.objects.expose(&references[index]);
@@ -377,15 +382,18 @@ fn operation(
             // Compiler-created snapshots are fresh. A restricted source here
             // would indicate an invalid lowering rather than a user call.
             if check {
-                state.get(target).check(
-                    &Span {
-                        file: "<IR>".into(),
-                        line: 1,
-                        column: 1,
-                    },
-                    "Boolean store",
-                    false,
-                )?;
+                state
+                    .get(target)
+                    .check(
+                        &Span {
+                            file: "<IR>".into(),
+                            line: 1,
+                            column: 1,
+                        },
+                        "Boolean store",
+                        false,
+                    )
+                    .map_err(|error| diagnostic::Failure::new(error, target))?;
             }
         }
         Operation::Release(_)
@@ -427,7 +435,8 @@ fn analyze_body(
                 summaries,
                 &declarations,
                 check,
-            )?;
+            )
+            .map_err(|failure| failure.explain(body, program))?;
         }
         let next = match &block.terminator {
             Terminator::Jump(target) => vec![target.0],
