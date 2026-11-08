@@ -52,7 +52,8 @@ pub(super) fn persistent(function: &Function) -> BTreeSet<ValueId> {
                     add(&target.id);
                     add(&value.id);
                 }
-                Operation::AnnotateBinding { .. }
+                Operation::DescribeBinding { .. }
+                | Operation::AnnotateBinding { .. }
                 | Operation::AnnotateAccess { .. }
                 | Operation::AnnotateEscape { .. } => {}
                 Operation::Release(ids) => {

@@ -595,6 +595,14 @@ impl Compiler {
             },
             initial: value.clone(),
         });
+        self.body.push(Instruction::DescribeBinding {
+            value: Value {
+                id: cpp.clone(),
+                ty: ty.clone(),
+            },
+            name: n.clone(),
+            captured: false,
+        });
         self.scopes.last_mut().unwrap().insert(
             n.text.clone(),
             Variable {

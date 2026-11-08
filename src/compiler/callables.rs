@@ -70,6 +70,11 @@ impl Compiler {
                 index,
             },
         });
+        context.prologue.push(Instruction::DescribeBinding {
+            value: value.clone(),
+            name: name.clone(),
+            captured: true,
+        });
         if let Some(info) = &variable.binding {
             context.prologue.push(Instruction::AnnotateBinding {
                 value: value.clone(),

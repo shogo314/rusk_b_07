@@ -244,6 +244,7 @@ impl Graph {
             }
             Operation::StoreBool { .. }
             | Operation::Release(_)
+            | Operation::DescribeBinding { .. }
             | Operation::AnnotateBinding { .. }
             | Operation::AnnotateAccess { .. }
             | Operation::AnnotateEscape { .. } => {}

@@ -81,6 +81,12 @@ pub(crate) struct EscapeInfo {
 }
 #[derive(Clone, Debug)]
 pub(crate) enum Instruction {
+    /// Source names for diagnostics; independent of declared contracts.
+    DescribeBinding {
+        value: Value,
+        name: crate::ast::Name,
+        captured: bool,
+    },
     AnnotateEscape {
         parameter: usize,
         info: EscapeInfo,

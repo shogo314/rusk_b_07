@@ -1,6 +1,7 @@
 //! Conservative, target-independent summaries. Opaque code is never inferred
 //! pure from its name or from target-language source.
 mod private;
+mod routes;
 
 use crate::{
     hir::{Place, Rvalue, Value, ValueId},
@@ -523,6 +524,7 @@ fn operation(
             state.values.insert(call.result.id.clone(), returned);
         }
         Operation::Release(_)
+        | Operation::DescribeBinding { .. }
         | Operation::AnnotateBinding { .. }
         | Operation::AnnotateAccess { .. }
         | Operation::AnnotateEscape { .. } => {}
@@ -633,7 +635,7 @@ struct EscapeWitness {
 }
 fn origin_route(origins: &ReturnOrigins, parameter: usize) -> String {
     if origins.unknown {
-        return "sharing origin is unknown after a heap mutation or opaque call".into();
+        return "sharing origin is unknown (heap mutation, opaque call or analysis limit)".into();
     }
     if let Some(alias) = origins.aliases.iter().find(|a| a.parameter == parameter) {
         format!(
@@ -661,15 +663,16 @@ fn first_escape(
         heap_unknown: false,
     };
     let mut entries = vec![None; body.blocks.len()];
-    entries[0] = Some(initial);
+    entries[0] = Some((initial, routes::Routes::new(body, parameter)));
     let mut pending = VecDeque::from([0]);
     while let Some(index) = pending.pop_front() {
-        let mut state = entries[index].as_ref().unwrap().clone();
+        let (mut state, mut routes) = entries[index].as_ref().unwrap().clone();
         let block = &body.blocks[index];
         for op in &block.instructions {
             let before = state.clone();
             let mut step = Summary::inferred(function.params.len());
             operation(op, &mut state, &mut step, callees, private);
+            routes.operation(op, &before, &state, callees, program);
             if step.parameters[parameter].escape != Effect::No {
                 let (span, effect, reason, route) = match op {
                     Operation::Call(call) => {
@@ -684,7 +687,11 @@ fn first_escape(
                             .map(|(i, arg)| {
                                 (
                                     format!("argument {}", i + 1),
-                                    origin_route(&before.get(arg), parameter),
+                                    format!(
+                                        "{}{}",
+                                        origin_route(&before.get(arg), parameter),
+                                        routes.describe(arg, &before.get(arg), parameter)
+                                    ),
                                 )
                             })
                             .unwrap_or(("argument".into(), "unknown retention path".into()));
@@ -698,11 +705,22 @@ fn first_escape(
                             route,
                         )
                     }
-                    Operation::Rebind { value, span, .. } => (
+                    Operation::Rebind {
+                        target: Place::Field { owner, index },
+                        value,
+                        span,
+                    } => (
                         span.clone(),
                         Effect::Unknown,
-                        "a field store may retain the shared value beyond this call".into(),
-                        origin_route(&before.get(value), parameter),
+                        format!(
+                            "a field store to {} may retain the shared value beyond this call; destination is not proven private",
+                            routes::projection_name(&owner.ty, &Projection::Field(*index), program)
+                        ),
+                        format!(
+                            "{}{}",
+                            origin_route(&before.get(value), parameter),
+                            routes.describe(value, &before.get(value), parameter)
+                        ),
                     ),
                     _ => (
                         None,
@@ -735,7 +753,7 @@ fn first_escape(
                         span: span.clone(),
                         effect: step.parameters[parameter].escape,
                         reason: "the return value may share the parameter, one of its elements or a captured value".into(),
-                        route: origin_route(&origins, parameter),
+                        route: format!("{}{}", origin_route(&origins, parameter), routes.describe(value, &origins, parameter)),
                     });
                 }
                 vec![]
@@ -744,9 +762,13 @@ fn first_escape(
         };
         for next in next {
             let changed = match &mut entries[next] {
-                Some(entry) => entry.join(&state),
+                Some((entry, paths)) => {
+                    let state_changed = entry.join(&state);
+                    let routes_changed = paths.join(&routes);
+                    state_changed || routes_changed
+                }
                 slot @ None => {
-                    *slot = Some(state.clone());
+                    *slot = Some((state.clone(), routes.clone()));
                     true
                 }
             };

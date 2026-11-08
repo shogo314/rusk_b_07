@@ -175,6 +175,12 @@ impl Check<'_> {
                     };
                     self.same(ty, &value.ty)?;
                 }
+                Instruction::DescribeBinding { value, .. } => {
+                    self.value(value)?;
+                    if !matches!(value.id, ValueId::Local(_)) {
+                        return Err("source binding requires a local identity".into());
+                    }
+                }
                 Instruction::AnnotateEscape { parameter, .. } => {
                     if !self.values.contains_key(&ValueId::Parameter(*parameter))
                         || !self.escape_parameters.insert(*parameter)

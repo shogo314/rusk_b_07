@@ -200,7 +200,8 @@ pub(crate) fn emit(
                 Instruction::StoreBool { target, value } => {
                     out += &format!("*{}=*{};\n", target.id, value.id)
                 }
-                Instruction::AnnotateBinding { .. }
+                Instruction::DescribeBinding { .. }
+                | Instruction::AnnotateBinding { .. }
                 | Instruction::AnnotateAccess { .. }
                 | Instruction::AnnotateEscape { .. } => {}
                 Instruction::Release(values) => out += &release(values),

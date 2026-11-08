@@ -389,6 +389,7 @@ fn operation(
             }
         }
         Operation::Release(_)
+        | Operation::DescribeBinding { .. }
         | Operation::AnnotateBinding { .. }
         | Operation::AnnotateEscape { .. } => {}
     }

@@ -20,7 +20,7 @@ impl Span {
         format!("{}:{}:{}: {}", self.file, self.line, self.column, message)
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     pub text: String,
     pub span: Span,

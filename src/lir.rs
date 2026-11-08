@@ -6,6 +6,11 @@ use std::collections::BTreeMap;
 pub(crate) struct BlockId(pub usize);
 #[derive(Clone, Debug)]
 pub(crate) enum Operation {
+    DescribeBinding {
+        value: Value,
+        name: crate::ast::Name,
+        captured: bool,
+    },
     AnnotateEscape {
         parameter: usize,
         info: hir::EscapeInfo,
@@ -214,6 +219,15 @@ impl Lower {
                             target: target.clone(),
                             value: value.clone(),
                             span: span.clone(),
+                        },
+                        Instruction::DescribeBinding {
+                            value,
+                            name,
+                            captured,
+                        } => Operation::DescribeBinding {
+                            value: value.clone(),
+                            name: name.clone(),
+                            captured: *captured,
                         },
                         Instruction::AnnotateEscape { parameter, info } => {
                             Operation::AnnotateEscape {
@@ -440,6 +454,12 @@ impl Program {
                         }
                     }
                     Operation::Release(ids) => release(ids)?,
+                    Operation::DescribeBinding { value: v, .. } => {
+                        value(v)?;
+                        if !matches!(v.id, hir::ValueId::Local(_)) {
+                            return Err("source binding requires a local identity".into());
+                        }
+                    }
                     Operation::AnnotateBinding { value: v, .. } => value(v)?,
                     Operation::AnnotateEscape { parameter, .. } => {
                         if *parameter >= params.len() || !escape_parameters.insert(*parameter) {
