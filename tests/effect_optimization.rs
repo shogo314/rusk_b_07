@@ -232,3 +232,52 @@ let a:=[3];let old:=a[0];let alias:=old;a[0]:=7;wt alias,a;
     let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
     assert!(!plain.contains("const Obj<std::int64_t>& rusk_v"));
 }
+
+#[test]
+fn mutable_inline_scalars_keep_alias_updates_and_promote_on_return() {
+    equivalent(
+        r#"
+fn total(n:Int)->Int{
+ let value:=0;let alias:=value;
+ for i in 0..n{alias+=i;}return value;
+}
+fn flag()->Bool{let value:=true;let alias:=value;alias=false;return value;}
+fn letter()->Char{let value:='a';let alias:=value;alias='z';return alias;}
+let result:=total(5);let saved:=result;result=99;wt result,saved,flag(),letter();
+fn choose(n:Int)->Int{let value:=1;let alias:=value;if n>0{alias+=2;return value;}alias+=4;return alias;}
+wt choose(1),choose(0);
+let x:=1;let alias:=x;x:=2;alias=3;wt x,alias;
+let captured:=1;let read:=()=>captured;captured+=1;wt read();
+let stored:=1;let values:=[stored];stored+=2;wt values;
+let numbers:=[1,2];for x in numbers{x+=10;}wt numbers;
+"#,
+        "99 99 No z\n3 5\n2 3\n2\n3\n11 12\n",
+    );
+    let case =
+        Case::new("fn sum()->Int{let total:=0;for i in 0..10{total+=i;}return total;}wt sum();");
+    assert!(case.compile().status.success());
+    let cpp = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    assert!(
+        cpp.contains("RuskInlineScalar<std::int64_t>& rusk_v"),
+        "{cpp}"
+    );
+    let body = cpp
+        .split("// Rusk function ")
+        .find(|body| {
+            body.lines()
+                .next()
+                .is_some_and(|line| line.ends_with(": sum"))
+        })
+        .unwrap();
+    let returned = body
+        .split("Obj<std::int64_t> rusk_return=")
+        .nth(1)
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap();
+    assert!(
+        cpp.contains(&format!("RuskInlineScalar<std::int64_t>& {returned}=")),
+        "{cpp}"
+    );
+}

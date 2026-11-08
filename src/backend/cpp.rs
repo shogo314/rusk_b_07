@@ -50,6 +50,13 @@ pub(crate) fn emit(
     } else {
         super::owned_aliases::Plan::default()
     };
+    let inline_storage = |id: &ValueId| {
+        if scalar_aliases.contains_key(id) {
+            "RuskInlineScalar"
+        } else {
+            "RuskTemporary"
+        }
+    };
     let mut persistent = super::storage::persistent(function);
     persistent.extend(scalar_aliases.values().cloned());
     let declaration = |value: &crate::hir::Value| {
@@ -57,7 +64,7 @@ pub(crate) fn emit(
             String::new()
         } else {
             let storage = if scalar.contains(&value.id) {
-                "RuskTemporary"
+                inline_storage(&value.id)
             } else {
                 "Obj"
             };
@@ -74,7 +81,7 @@ pub(crate) fn emit(
         }
         if persistent.contains(&slot.id) {
             let storage = if scalar.contains(&slot.id) {
-                "RuskTemporary"
+                inline_storage(&slot.id)
             } else {
                 "Obj"
             };
@@ -85,7 +92,10 @@ pub(crate) fn emit(
         if let Some(owner) = scalar_aliases.get(&slot.id)
             && slot.id != *owner
         {
-            out += &format!("RuskTemporary<{}>& {}={owner};\n", types[&slot.ty], slot.id);
+            out += &format!(
+                "RuskInlineScalar<{}>& {}={owner};\n",
+                types[&slot.ty], slot.id
+            );
         }
     }
     let release = |values: &[ValueId]| {
@@ -139,7 +149,7 @@ pub(crate) fn emit(
                         }
                     };
                     let constructor = if scalar.contains(&result.id) {
-                        "RuskTemporary"
+                        inline_storage(&result.id)
                     } else {
                         "make_obj"
                     };
@@ -166,7 +176,7 @@ pub(crate) fn emit(
                         Rvalue::BoolCopy(value) => format!(
                             "{}<bool>(*{})",
                             if scalar.contains(&result.id) {
-                                "RuskTemporary"
+                                inline_storage(&result.id)
                             } else {
                                 "make_obj"
                             },
@@ -184,7 +194,7 @@ pub(crate) fn emit(
                             format!(
                                 "{}<bool>(rusk_enum_index<{}>({}->value)=={index})",
                                 if scalar.contains(&result.id) {
-                                    "RuskTemporary"
+                                    inline_storage(&result.id)
                                 } else {
                                     "make_obj"
                                 },
@@ -257,9 +267,10 @@ pub(crate) fn emit(
                         );
                     } else if scalar.contains(&call.result.id) {
                         out += &format!(
-                            "{}{}=RuskTemporary<{}>({expression});\n",
+                            "{}{}={}<{}>({expression});\n",
                             declaration(&call.result),
                             call.result.id,
+                            inline_storage(&call.result.id),
                             types[&call.result.ty]
                         );
                     } else {

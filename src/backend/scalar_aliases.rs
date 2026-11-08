@@ -1,6 +1,7 @@
 //! Closed groups of fresh scalar references can share inline storage. Every use
-//! must stay in generated scalar operations; foreign calls, returns, member
-//! storage and rebinding keep ordinary ownership and promotion semantics.
+//! must stay in generated scalar operations; foreign calls, member
+//! storage and rebinding keep ordinary ownership. Fresh groups may be mutated
+//! by scalar assignment and promoted when returned; owned groups stay readonly.
 use super::{FunctionInfo, intrinsics};
 use crate::{
     effects::Effect,
@@ -125,7 +126,11 @@ fn groups(
                     for (index, arg) in call.args.iter().enumerate() {
                         let effect = &summaries[call.function].effects.parameters[index];
                         if !lowered
-                            || effect.write != Effect::No
+                            || (effect.write != Effect::No
+                                && (owned
+                                    || functions[call.function].name != "__assign__"
+                                    || index != 0
+                                    || effect.write != Effect::May))
                             || effect.structural != Effect::No
                             || effect.escape != Effect::No
                         {
@@ -151,9 +156,10 @@ fn groups(
                 _ => {}
             }
         }
-        if let Terminator::Return {
-            value: Some(value), ..
-        } = &block.terminator
+        if owned
+            && let Terminator::Return {
+                value: Some(value), ..
+            } = &block.terminator
         {
             block_value(&value.id);
         }

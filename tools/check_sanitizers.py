@@ -215,6 +215,11 @@ let text:="ab";let chars:=[text[0]];
 {let c:=chars[0];let alias:=c;wt alias;}
 chars=[];text.push_back('!');wt text;
 ''', b'', b'6\na\nab!\n'),
+    ('''fn total(n:Int)->Int{
+ let value:=0;let alias:=value;for i in 0..n{alias+=i;}return value;
+}
+let result:=total(100);let saved:=result;wt result;result=7;wt saved,total(5);
+''', b'', b'4950\n7 10\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

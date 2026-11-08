@@ -1,3 +1,21 @@
+// Closed scalar groups have no object escapes except their final return.
+// Their aliases refer to this one value. Conversion is used only by return,
+// where a new owning object is created before local cleanup.
+template<class T> class RuskInlineScalar {
+    T value{};
+public:
+    RuskInlineScalar() = default;
+    explicit RuskInlineScalar(T initial) : value(std::move(initial)) {}
+    RuskInlineScalar(const RuskInlineScalar&) = delete;
+    RuskInlineScalar& operator=(const RuskInlineScalar&) = delete;
+    RuskInlineScalar(RuskInlineScalar&&) = default;
+    RuskInlineScalar& operator=(RuskInlineScalar&&) = default;
+    T& operator*() { return value; }
+    const T& operator*() const { return value; }
+    operator Obj<T>() const { return make_obj<T>(value); }
+    void reset() {}
+};
+
 // Fresh scalar expression results start inline. A shared object is created on
 // the first escape into a variable, aggregate, or ordinary function argument.
 // Subsequent reads and writes use that SAME object, including after promotion.
