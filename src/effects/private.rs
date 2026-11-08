@@ -1,7 +1,8 @@
 //! Flow-insensitive allocation-site reachability for private aggregate stores.
 //! Sharing and rebinding union possible destinations; member stores are weak
 //! updates. Publication reaches every possible child, including older values
-//! from another branch or loop iteration. Known nonretaining calls can forward root or member aliases.
+//! from another branch or loop iteration. Known nonretaining calls forward
+//! aliases and track references contained in their results.
 use super::{Effect, Projection, Summary, SummarySource};
 use crate::{
     hir::{Place, Rvalue, ValueId},
@@ -9,16 +10,29 @@ use crate::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Object {
+    site: ValueId,
+    // A path locates a return-summary node. Even its root has unknown
+    // identity; only fresh LIR constructions prove private allocations.
+    path: Vec<Projection>,
+}
 #[derive(Clone, Default, PartialEq, Eq)]
 struct Reference {
-    objects: BTreeSet<ValueId>,
+    objects: BTreeSet<Object>,
     unknown: bool,
 }
 impl Reference {
     fn fresh(site: ValueId) -> Self {
         Self {
-            objects: [site].into(),
+            objects: [Object { site, path: vec![] }].into(),
             unknown: false,
+        }
+    }
+    fn contained(site: ValueId, path: Vec<Projection>) -> Self {
+        Self {
+            objects: [Object { site, path }].into(),
+            unknown: true,
         }
     }
     fn unknown() -> Self {
@@ -35,8 +49,8 @@ impl Reference {
 #[derive(Clone, Default, PartialEq, Eq)]
 struct Graph {
     values: BTreeMap<ValueId, Reference>,
-    members: BTreeMap<ValueId, BTreeMap<Projection, Reference>>,
-    exposed: BTreeSet<ValueId>,
+    members: BTreeMap<Object, BTreeMap<Projection, Reference>>,
+    exposed: BTreeSet<Object>,
 }
 impl Graph {
     fn get(&self, id: &ValueId) -> Reference {
@@ -74,6 +88,34 @@ impl Graph {
         if owner.unknown || owner.objects.iter().any(|site| self.exposed.contains(site)) {
             self.expose(value);
         }
+    }
+    /// Materialize may-reachability from a returned aggregate. These summary
+    /// nodes always have unknown identity; they never prove private storage.
+    /// Unlike a program store into an unknown destination, describing a result
+    /// does not itself publish its contained references.
+    fn contain(&mut self, site: &ValueId, path: &[Projection], value: &Reference) -> Reference {
+        let root = Reference::contained(site.clone(), vec![]);
+        let mut object = Object {
+            site: site.clone(),
+            path: vec![],
+        };
+        for (index, projection) in path.iter().enumerate() {
+            let field = if index + 1 == path.len() {
+                value.clone()
+            } else {
+                let mut prefix = object.path.clone();
+                prefix.push(projection.clone());
+                Reference::contained(site.clone(), prefix)
+            };
+            self.members
+                .entry(object.clone())
+                .or_default()
+                .entry(projection.clone())
+                .or_default()
+                .join(&field);
+            object.path.push(projection.clone());
+        }
+        root
     }
     fn project(&self, owner: &Reference, projection: Projection) -> Reference {
         let mut value = Reference {
@@ -156,11 +198,6 @@ impl Graph {
                             SummarySource::Inferred | SummarySource::NativeContract
                         ) && callee.external_write == Effect::No
                             && !callee.returned.unknown
-                            && callee
-                                .returned
-                                .aliases
-                                .iter()
-                                .all(|alias| alias.result_path.is_empty())
                     });
                 let value = if let Some(callee) = known {
                     for (arg, effect) in args.iter().zip(&callee.parameters) {
@@ -183,12 +220,18 @@ impl Graph {
                         for projection in &alias.parameter_path {
                             actual = self.project(&actual, projection.clone());
                         }
-                        value.join(&actual);
+                        if alias.result_path.is_empty() {
+                            value.join(&actual);
+                        } else {
+                            let contained =
+                                self.contain(&call.result.id, &alias.result_path, &actual);
+                            value.join(&contained);
+                        }
                     }
                     value
                 } else {
-                    // Unknown and aggregate-containing results may hide aliases.
-                    // Publish arguments rather than lose their reachability.
+                    // Unknown results may hide aliases. Publish arguments
+                    // rather than lose their reachability.
                     for arg in &args {
                         self.expose(arg);
                     }
@@ -210,8 +253,8 @@ impl Graph {
 
 pub(super) fn destinations(body: &Function, callees: Option<&[Summary]>) -> BTreeSet<ValueId> {
     let mut graph = Graph::default();
-    // Sites and member keys come only from finite LIR instructions. Weak
-    // updates grow sets monotonically, so cycles need no unbounded paths.
+    // Sites come from finite LIR instructions; summary paths are bounded by
+    // effect validation. Weak updates never expand those paths through cycles.
     loop {
         let before = graph.clone();
         for block in &body.blocks {

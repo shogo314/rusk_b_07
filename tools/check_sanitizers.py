@@ -200,6 +200,15 @@ fn scoped(noescape x:Char)->Int{
 }
 let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
 ''', b'', b'a\n1\nabc!\n'),
+    ('''struct Letter{value:Char;}
+struct Holder{letter:Letter;}
+fn pack(c:Letter)->(Holder,Int){return (Holder{letter:c},0);}
+fn scoped(noescape x:Char)->Int{
+ let c:=Letter{value:'?'};let held:=pack(c);
+ c.value:=x;wt held[0].letter.value;return 1;
+}
+let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
+''', b'', b'a\n1\nabc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

@@ -207,6 +207,11 @@ fn diagnostics_point_to_returns_and_retaining_calls_before_ir_or_cpp_output() {
             4,
             "argument 2 of 'push_back'",
         ),
+        (
+            "struct Box{value:Int;}fn packed(b:Box)->(Box,Int){return (b,0);}fn bad(noescape value:Int,values:Vec<Int>) {\nlet box:=Box{value:0};\nlet held:=packed(box);\nbox.value:=value;\nvalues.push_back(value);\n}\nlet a:Vec<Int>:=[];bad(1,a);",
+            5,
+            "argument 2 of 'push_back'",
+        ),
     ] {
         for stage in ["hir", "lir", "cpp"] {
             let case = Case::new(source);
@@ -320,7 +325,7 @@ fn f(noescape x:Int){let b:=Box{value:0};b.value:=x;foreign(b);}f(1);
 #[test]
 fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
     let case = Case::new(
-        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn nested(x:Int)->Int{let b:=(Box{value:0},0);b[0].value:=x;return b[0].value+1;}\nfn identity(b:Box)->Box{return b;}\nfn via_call(x:Int)->Int{let b:=Box{value:0};let alias:=identity(b);alias.value:=x;return b.value+1;}\nwt plain(1),explicit(2),nested(3),via_call(4);",
+        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn nested(x:Int)->Int{let b:=(Box{value:0},0);b[0].value:=x;return b[0].value+1;}\nfn identity(b:Box)->Box{return b;}\nfn via_call(x:Int)->Int{let b:=Box{value:0};let alias:=identity(b);alias.value:=x;return b.value+1;}\nfn packed(b:Box)->(Box,Int){return (b,0); }\nfn via_result(x:Int)->Int{let b:=Box{value:0};let h:=packed(b);b.value:=x;return h[0].value+1;}\nwt plain(1),explicit(2),nested(3),via_call(4),via_result(5);",
     );
     for stage in ["hir", "lir"] {
         let output = case.compile_with_options(&["--emit", stage]);
@@ -330,7 +335,7 @@ fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
             String::from_utf8_lossy(&output.stderr)
         );
         let dump = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
-        for name in ["plain", "explicit", "nested", "via_call"] {
+        for name in ["plain", "explicit", "nested", "via_call", "via_result"] {
             let function = &dump[dump.find(&format!("name: \"{name}\",")).unwrap()..];
             let effects = &function[function.find("effects: Summary").unwrap()..];
             let parameter = effects
@@ -480,6 +485,85 @@ fn forwarding_does_not_hide_publication_mutation_or_mixed_external_origins() {
         rejects(
             &format!(
                 "struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}fn identity(c:Cell)->Cell{{return c;}}fn getter(h:Holder)->Cell{{return h.cell;}}fn choose(a:Cell,b:Cell,flag:Bool)->Cell{{if flag{{return a;}}return b;}}{body}"
+            ),
+            "cannot prove noescape for parameter 'x'",
+        );
+    }
+}
+
+#[test]
+fn returned_aggregates_keep_original_private_aliases_without_publishing_them() {
+    succeeds(
+        r#"
+struct Cell{value:Int;}
+struct Holder{cell:Cell;}
+enum Wrapped{Full(Cell),Empty}
+fn wrap(c:Cell)->Holder{return Holder{cell:c};}
+fn twice(c:Cell)->(Holder,Int){return (wrap(c),0);}
+fn payload(c:Cell)->Wrapped{return Wrapped::Full(c);}
+fn identity(h:Holder)->Holder{return h;}
+fn maybe(c:Cell,flag:Bool)->Holder{if flag{return wrap(c);}return wrap(Cell{value:5});}
+fn direct(noescape x:Int)->Int{
+ let c:=Cell{value:0};let h:=identity(wrap(c));c.value:=x;return h.cell.value+1;
+}
+fn nested(noescape x:Int)->Int{
+ let c:=Cell{value:0};let h:=twice(c);c.value:=x;return h[0].cell.value+2;
+}
+fn variant(noescape x:Int)->Int{
+ let c:=Cell{value:0};let h:=payload(c);c.value:=x;
+ return match h{Full(value)=>value.value+3,Empty=>0,};
+}
+fn option(noescape x:Int)->Int{
+ let c:=Cell{value:0};let h:=Some(c);c.value:=x;return h?!.value+4;
+}
+fn branching(noescape x:Int,flag:Bool)->Int{
+ let c:=Cell{value:0};let h:=maybe(c,flag);c.value:=x;return h.cell.value+1;
+}
+fn repeated(noescape x:Int)->Int{
+ let total:=0;for i in 0..3{let c:=Cell{value:0};let h:=wrap(c);c.value:=x;total+=h.cell.value;}
+ return total;
+}
+wt direct(3),nested(3),variant(3),option(3),branching(3,true),branching(3,false),repeated(3);
+"#,
+        "4 5 6 7 4 6 9\n",
+    );
+}
+
+#[test]
+fn publishing_returned_containers_reaches_original_children_and_earlier_instances() {
+    for body in [
+        "fn f(noescape x:Int)->Holder{let c:=Cell{value:0};let h:=wrap(c);c.value:=x;return h;}f(1);",
+        "fn f(noescape x:Int,items:Vec<Holder>){let c:=Cell{value:0};let h:=wrap(c);items.push_back(h);c.value:=x;}let items:Vec<Holder>:=[];f(1,items);",
+        "fn f(noescape x:Int,items:Vec<Holder>){let c:=Cell{value:0};let h:=wrap(c);c.value:=x;items.push_back(h);}let items:Vec<Holder>:=[];f(1,items);",
+        "fn f(noescape x:Int,flag:Bool,items:Vec<Holder>){let c:=Cell{value:0};let h:=wrap(c);if flag{items.push_back(h);}c.value:=x;}let items:Vec<Holder>:=[];f(1,true,items);",
+        "fn f(noescape x:Int,items:Vec<Cell>){let c:=Cell{value:0};let h:=wrap(c);items.push_back(h.cell);c.value:=x;}let items:Vec<Cell>:=[];f(1,items);",
+        "fn f(noescape x:Int,items:Vec<Holder>){for i in 0..2{let c:=Cell{value:0};let h:=wrap(c);c.value:=x;items.push_back(h);}}let items:Vec<Holder>:=[];f(1,items);",
+        "fn twice(c:Cell)->(Holder,Int){return (wrap(c),0);}fn f(noescape x:Int)->(Holder,Int){let c:=Cell{value:0};let h:=twice(c);c.value:=x;return h;}f(1);",
+        "enum Wrapped{Full(Cell),Empty}fn payload(c:Cell)->Wrapped{return Wrapped::Full(c);}fn f(noescape x:Int)->Wrapped{let c:=Cell{value:0};let h:=payload(c);c.value:=x;return h;}f(1);",
+        "fn f(noescape x:Int)->Option<Cell>{let c:=Cell{value:0};let h:=Some(c);c.value:=x;return h;}f(1);",
+        "let f:=(noescape x:Int)=>{let c:=Cell{value:0};let h:=wrap(c);c.value:=x;()=>h.cell.value};let callback:=f(1);wt callback();",
+        "fn f(noescape x:Int,external:Holder){let c:=Cell{value:0};let h:=wrap(c);c.value:=x;external.cell:=h.cell;}f(1,Holder{cell:Cell{value:0}});",
+    ] {
+        rejects(
+            &format!(
+                "struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}fn wrap(c:Cell)->Holder{{return Holder{{cell:c}};}}{body}"
+            ),
+            "cannot prove noescape for parameter 'x'",
+        );
+    }
+}
+
+#[test]
+fn return_path_candidates_do_not_prove_unique_wrappers_or_definite_children() {
+    for body in [
+        "fn f(noescape x:Int){let h:=wrap(Cell{value:0});h.cell.value:=x;}f(1);",
+        "fn f(noescape x:Int,external:Cell){let h:=wrap(external);h.cell.value:=x;}f(1,Cell{value:0});",
+        "fn maybe(c:Cell,flag:Bool)->Holder{if flag{return wrap(c);}return wrap(Cell{value:0});}fn f(noescape x:Int){let h:=maybe(Cell{value:0},true);let c:=h.cell;c.value:=x;}f(1);",
+        "fn f(noescape x:Int){let h:=wrap(Cell{value:0});h.cell:=Cell{value:x};}f(1);",
+    ] {
+        rejects(
+            &format!(
+                "struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}fn wrap(c:Cell)->Holder{{return Holder{{cell:c}};}}{body}"
             ),
             "cannot prove noescape for parameter 'x'",
         );
