@@ -9,7 +9,7 @@ pub(crate) struct Context {
     pub foreign_definitions: Vec<String>,
     pub epilogue: String,
 }
-fn signature(function: &ProgramFunction, context: &Context) -> String {
+fn signature(function: &ProgramFunction, context: &Context, optimize: bool) -> String {
     let result = if function.result == "Unit" {
         "void".into()
     } else {
@@ -19,7 +19,20 @@ fn signature(function: &ProgramFunction, context: &Context) -> String {
         .params
         .iter()
         .enumerate()
-        .map(|(i, t)| format!("Obj<{}> rusk_p{i}", context.types[t]))
+        .map(|(i, t)| {
+            let effect = &function.effects.parameters[i];
+            let borrowed = optimize
+                && function.effects.source == crate::effects::SummarySource::Inferred
+                && function.effects.external_write == crate::effects::Effect::No
+                && effect.write == crate::effects::Effect::No
+                && effect.structural == crate::effects::Effect::No
+                && effect.escape == crate::effects::Effect::No;
+            if borrowed {
+                format!("const Obj<{}>& rusk_p{i}", context.types[t])
+            } else {
+                format!("Obj<{}> rusk_p{i}", context.types[t])
+            }
+        })
         .collect::<Vec<_>>();
     params.push("[[maybe_unused]] Loc rusk_call_loc".into());
     format!(
@@ -33,7 +46,7 @@ pub(crate) fn emit(program: &Program, context: &Context, optimize: bool) -> Stri
     out += &context.prelude;
     for f in &program.functions {
         if f.body.is_some() {
-            out += &signature(f, context);
+            out += &signature(f, context, optimize);
             out += ";\n";
         }
     }
@@ -47,8 +60,15 @@ pub(crate) fn emit(program: &Program, context: &Context, optimize: bool) -> Stri
                 "// Rusk function {}: {}\n{} {{\n{}\n}}\n",
                 f.id,
                 f.name,
-                signature(f, context),
-                cpp(body, &context.types, &context.functions, optimize, false)
+                signature(f, context, optimize),
+                cpp(
+                    body,
+                    &context.types,
+                    &context.functions,
+                    &program.functions,
+                    optimize,
+                    false
+                )
             );
         }
     }
@@ -58,6 +78,7 @@ pub(crate) fn emit(program: &Program, context: &Context, optimize: bool) -> Stri
         &program.main,
         &context.types,
         &context.functions,
+        &program.functions,
         optimize,
         true,
     );

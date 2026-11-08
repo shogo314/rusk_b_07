@@ -1,4 +1,5 @@
 //! Target-specific representation selection and C++ emission from LIR.
+mod boolean_aliases;
 mod cpp;
 mod intrinsics;
 mod program;

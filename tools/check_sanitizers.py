@@ -154,6 +154,15 @@ let s:="abc";
 {let c:=s[0];bump(c);run(()=>c);wt char_copy(s),s;}
 s.push_back('!');wt s;
 ''', b'', b'Z Zbc\nZbc!\n'),
+    ('''fn positive(x:Int)->Bool{let flag:=x>0;let alias:=flag;return alias && true;}
+let total:=0;
+for i in 0..5{let flag:=i>0;let alias:=flag;if alias && positive(i){total+=1;}}
+let s:="abc";
+fn code(c:Char)->Int{return Int(c);}
+wt total,code(s[0]);s.push_back('!');wt s;
+struct Box{value:Int;}
+readonly let r:=1;let a:=Box{value:0};let b:=Box{value:0};a.value:=r;b.value=2;wt a.value,b.value;
+''', b'', b'4 97\nabc!\n1 2\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

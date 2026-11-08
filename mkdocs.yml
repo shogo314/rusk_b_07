@@ -47,6 +47,7 @@ nav:
       - 関数を使う操作とデータ構造: library/beta04.md
   - 開発ガイド:
       - β07の開始点と実装方針: development/beta07.md
+      - β07の共有先解析と最適化: development/beta07-performance.md
       - β06の実装と検証: development/beta06.md
       - 変換パイプラインとIR: development/pipeline.md
       - 開発の進め方: development/index.md

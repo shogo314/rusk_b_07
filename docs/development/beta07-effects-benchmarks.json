@@ -1,0 +1,170 @@
+{
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "compiler_sha256": {
+    "baseline": "bae86e35634a24e0630e1529959d28a8e07434dcfdd1edda323ab5b26a633adf",
+    "current": "cdfb3d7a5e05e1c820540b4e16b586cfe9010aa83df229858bb2a390d97623a3"
+  },
+  "repeats": 7,
+  "flags": [
+    "-std=c++20",
+    "-O2"
+  ],
+  "timing": "interleaved; compilation excluded; instrumentation measured separately",
+  "cases": {
+    "scalar_call": {
+      "source": "fn add_one(x:Int)->Int{return x+1;}let i:=0;let total:=0;while i<500000{total+=add_one(i);i+=1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "125000250000\n",
+          "cpp_sha256": "dda884f98bea1e1bcccbf8f14a4885669b7832c8c16133742da59af2a7a630d7",
+          "runs_ms": [
+            14.182524,
+            12.451888,
+            12.33025,
+            12.68752,
+            12.489491,
+            12.315565,
+            13.277339
+          ],
+          "allocations": 500008,
+          "shared_ptr_copies": 4000004,
+          "median_ms": 12.489491
+        },
+        "current": {
+          "output": "125000250000\n",
+          "cpp_sha256": "39b1c8313b7ab8889b3c75d7a879d0c37b699a2ab0daf6cd80fac47b2fcb9f77",
+          "runs_ms": [
+            11.182637,
+            11.684518,
+            10.946084,
+            11.455814,
+            11.803194,
+            11.757709,
+            10.884691
+          ],
+          "allocations": 500008,
+          "shared_ptr_copies": 3500004,
+          "median_ms": 11.455814
+        }
+      },
+      "speedup": 1.0902316500599607
+    },
+    "find": {
+      "source": "let a:=[1;100000];let total:=0;for i in 0..20{total+=find(a,2)??-1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "-20\n",
+          "cpp_sha256": "ff5065fb78523101e2a7abcf179baaab4c2bf2d5f6bcf0d642a1a5124f7d7212",
+          "runs_ms": [
+            55.358562,
+            55.48802,
+            55.648641,
+            55.383841,
+            55.386757,
+            56.189217,
+            55.617264
+          ],
+          "allocations": 2100155,
+          "shared_ptr_copies": 22000308,
+          "median_ms": 55.48802
+        },
+        "current": {
+          "output": "-20\n",
+          "cpp_sha256": "f95252f61858ca34c2395d1302f2789b13a8302df49dce5415cef0da71370a5d",
+          "runs_ms": [
+            41.395059,
+            42.6786,
+            42.701002,
+            42.614386,
+            42.121842,
+            42.396961,
+            42.224908
+          ],
+          "allocations": 100135,
+          "shared_ptr_copies": 18000308,
+          "median_ms": 42.396961
+        }
+      },
+      "speedup": 1.308773522706026
+    },
+    "sum_native": {
+      "source": "let a:=[1;1000000];let total:=0;for i in 0..20{total+=sum(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "1bea48ca399620ca325007c18856ea24fbc2f72b3c8fb237b87f49858c277404",
+          "runs_ms": [
+            41.982103,
+            42.700401,
+            41.073609,
+            41.908121,
+            41.238665,
+            42.281905,
+            41.978876
+          ],
+          "allocations": 1000055,
+          "shared_ptr_copies": 88,
+          "median_ms": 41.978876
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "f1ffddde80d71f93a9548f9fd0a139a3b536a0e3b9825d1f6c309f397d0d9ab9",
+          "runs_ms": [
+            40.624141,
+            42.807021,
+            40.147793,
+            43.115787,
+            42.167016,
+            41.204694,
+            40.931792
+          ],
+          "allocations": 1000055,
+          "shared_ptr_copies": 88,
+          "median_ms": 41.204694
+        }
+      },
+      "speedup": 1.0187886846095737
+    },
+    "sum_rusk": {
+      "source": "fn rusk_total(a:Vec<Int>)->Int{let total:=0;for x in a{total+=x;}return total;}let a:=[1;1000000];let total:=0;for i in 0..20{total+=rusk_total(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "44c2850706a20379eff277a64b2cb253c330198268787eb6ca2ffc3d4d61d54b",
+          "runs_ms": [
+            283.208948,
+            280.058147,
+            283.558345,
+            283.376473,
+            280.335919,
+            288.986238,
+            279.150933
+          ],
+          "allocations": 1000075,
+          "shared_ptr_copies": 100000228,
+          "median_ms": 283.208948
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "83e1f4f59750eee155b88aa81ef16718cc271a5f3b39c443d1961cbfe53bab38",
+          "runs_ms": [
+            281.357235,
+            280.795894,
+            280.414406,
+            280.495708,
+            279.409811,
+            280.109833,
+            284.433225
+          ],
+          "allocations": 1000075,
+          "shared_ptr_copies": 100000228,
+          "median_ms": 280.495708
+        }
+      },
+      "speedup": 1.0096730178844664
+    }
+  },
+  "cpu": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+  "completed_utc": "2026-11-08T13:55:24.516607+00:00"
+}

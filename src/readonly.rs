@@ -1,5 +1,5 @@
 //! Access-path contracts. Qualifiers follow shared values, not every alias of
-//! the underlying allocation. Heap stores conservatively widen restrictions;
+//! the underlying allocation. Known local stores use an allocation-site graph;
 //! this pass never treats an unverified external implementation as readonly.
 use crate::{
     ast::{AccessMode, Span},
@@ -8,6 +8,8 @@ use crate::{
     lir::{self, Operation, Terminator},
 };
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+mod heap;
+use heap::{Heap, Reference};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct AccessPaths(BTreeMap<Vec<Projection>, BTreeSet<AccessInfo>>, bool);
@@ -147,25 +149,38 @@ impl Summary {
 }
 #[derive(Clone, Default, PartialEq, Eq)]
 struct State {
-    values: BTreeMap<ValueId, AccessPaths>,
-    /// Until heap identities are tracked, a retained restricted reference can
-    /// occur in any subsequently observed aggregate or member projection.
+    values: BTreeMap<ValueId, Reference>,
+    objects: Heap,
+    /// Unknown destinations and exposed objects may have untracked aliases.
+    /// Their retained restrictions still widen to all aggregates/projections.
     heap: AccessPaths,
 }
 fn aggregate(ty: &str) -> bool {
     !matches!(ty, "Int" | "Bool" | "Char" | "Unit")
 }
 impl State {
+    fn reference(&self, value: &Value) -> Reference {
+        self.values
+            .get(&value.id)
+            .cloned()
+            .unwrap_or_else(Reference::unknown)
+    }
     fn get(&self, value: &Value) -> AccessPaths {
-        let mut result = self.values.get(&value.id).cloned().unwrap_or_default();
+        let mut access = self.objects.read(&self.reference(value));
         if aggregate(&value.ty) {
-            result.join(&self.heap);
+            access.join(&self.heap);
         }
-        result
+        access
+    }
+    fn project(&self, owner: &Reference, projection: Projection) -> Reference {
+        let mut value = self.objects.project(owner, projection);
+        value.access.join(&self.heap);
+        value
     }
     fn join(&mut self, other: &Self) -> bool {
         let old = self.clone();
         self.heap.join(&other.heap);
+        self.objects.join(&other.objects);
         for (id, value) in &other.values {
             self.values.entry(id.clone()).or_default().join(value);
         }
@@ -188,44 +203,47 @@ fn operation(
                     .values
                     .entry(value.id.clone())
                     .or_default()
+                    .access
                     .join(&AccessPaths::root(info.clone()));
             }
         }
         Operation::Literal { result, .. } => {
             state
                 .values
-                .insert(result.id.clone(), AccessPaths::default());
+                .insert(result.id.clone(), Reference::fresh(result.id.clone()));
         }
         Operation::Declare { result, initial } => {
-            let mut value = initial.as_ref().map(|v| state.get(v)).unwrap_or_default();
+            let mut value = initial
+                .as_ref()
+                .map(|v| state.reference(v))
+                .unwrap_or_default();
             if let Some(info) = declarations.get(&result.id) {
-                value.join(&AccessPaths::root(info.clone()));
+                value.access.join(&AccessPaths::root(info.clone()));
             }
             state.values.insert(result.id.clone(), value);
         }
         Operation::Object { result, expression } => {
             let value = match expression {
-                Rvalue::Share(value) => state.get(value),
-                Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. } => AccessPaths::default(),
+                Rvalue::Share(value) => state.reference(value),
+                Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. } => {
+                    Reference::fresh(result.id.clone())
+                }
                 Rvalue::Field { owner, index } => {
-                    let mut value = state.get(owner).project(Projection::Field(*index));
-                    value.join(&state.heap);
-                    value
+                    state.project(&state.reference(owner), Projection::Field(*index))
                 }
                 Rvalue::VariantField {
                     owner,
                     variant,
                     index,
-                } => {
-                    let mut value = state.get(owner).project(Projection::VariantField {
+                } => state.project(
+                    &state.reference(owner),
+                    Projection::VariantField {
                         variant: *variant,
                         field: *index,
-                    });
-                    value.join(&state.heap);
-                    value
-                }
+                    },
+                ),
                 Rvalue::Aggregate(fields) | Rvalue::Variant { fields, .. } => {
-                    let mut value = AccessPaths::default();
+                    let value = Reference::fresh(result.id.clone());
                     for (index, field) in fields.iter().enumerate() {
                         let projection = match expression {
                             Rvalue::Variant { index: variant, .. } => Projection::VariantField {
@@ -234,7 +252,9 @@ fn operation(
                             },
                             _ => Projection::Field(index),
                         };
-                        value.join(&state.get(field).contain(projection));
+                        state
+                            .objects
+                            .store(&value, projection, &state.reference(field));
                     }
                     value
                 }
@@ -246,31 +266,42 @@ fn operation(
             value,
             span,
         } => {
-            let mut value = state.get(value);
+            let mut value = state.reference(value);
             match target {
                 Place::Local(id) => {
                     if let Some(info) = declarations.get(id) {
-                        value.join(&AccessPaths::root(info.clone()));
+                        value.access.join(&AccessPaths::root(info.clone()));
                     }
                     state.values.insert(id.clone(), value);
                 }
-                Place::Field { owner, .. } => {
+                Place::Field { owner, index } => {
                     let owner_access = state.get(owner).project_root();
                     if check {
                         owner_access.check(
-                            span.as_ref()
-                                .expect("source member rebinding has a location"),
+                            span.as_ref().unwrap_or(&Span {
+                                file: "<IR>".into(),
+                                line: 1,
+                                column: 1,
+                            }),
                             "field or tuple element rebinding",
                             false,
                         )?;
                     }
-                    state.heap.join(&value.collapse());
-                    result.retained.join(&value.collapse());
+                    if state.objects.store(
+                        &state.reference(owner),
+                        Projection::Field(*index),
+                        &value,
+                    ) {
+                        let access = state.objects.read(&value).collapse();
+                        state.heap.join(&access);
+                        result.retained.join(&access);
+                    }
                 }
             }
         }
         Operation::Call(call) => {
             let callee = &program.functions[call.function];
+            let references: Vec<_> = call.args.iter().map(|v| state.reference(v)).collect();
             let args: Vec<_> = call.args.iter().map(|v| state.get(v)).collect();
             for (index, (actual, effect)) in args.iter().zip(&callee.effects.parameters).enumerate()
             {
@@ -282,6 +313,7 @@ fn operation(
                     )?;
                 }
                 if effect.retained != Effect::No {
+                    state.objects.expose(&references[index]);
                     state.heap.join(&actual.collapse());
                     result.retained.join(&actual.collapse());
                 }
@@ -289,23 +321,54 @@ fn operation(
             let restriction = &summaries[call.function];
             state.heap.join(&restriction.retained);
             result.retained.join(&restriction.retained);
-            let mut value = restriction.returned.clone();
-            if callee.effects.returned.unknown {
-                for actual in &args {
-                    value.join(&actual.collapse());
-                }
-                value.join(&state.heap);
+            let mut value = if callee.effects.returned.fresh {
+                Reference::fresh(call.result.id.clone())
             } else {
-                for alias in &callee.effects.returned.aliases {
-                    let mut actual = args[alias.parameter].clone();
+                Reference::default()
+            };
+            value.access.join(&restriction.returned);
+            if callee.effects.returned.unknown {
+                value.unknown = true;
+                for (actual, reference) in args.iter().zip(&references) {
+                    value.access.join(&actual.collapse());
+                    state.objects.expose(reference);
+                }
+                value.access.join(&state.heap);
+            } else {
+                // Resolve root aliases first, then populate members of the new
+                // result. Descendant identities remain shared with arguments.
+                for alias in callee
+                    .effects
+                    .returned
+                    .aliases
+                    .iter()
+                    .filter(|a| a.result_path.is_empty())
+                {
+                    let mut actual = references[alias.parameter].clone();
                     for projection in &alias.parameter_path {
-                        actual = actual.project(projection.clone());
-                        actual.join(&state.heap);
-                    }
-                    for projection in alias.result_path.iter().rev() {
-                        actual = actual.contain(projection.clone());
+                        actual = state.project(&actual, projection.clone());
                     }
                     value.join(&actual);
+                }
+                for alias in callee
+                    .effects
+                    .returned
+                    .aliases
+                    .iter()
+                    .filter(|a| !a.result_path.is_empty())
+                {
+                    let mut actual = references[alias.parameter].clone();
+                    for projection in &alias.parameter_path {
+                        actual = state.project(&actual, projection.clone());
+                    }
+                    if state
+                        .objects
+                        .store_path(&value, &alias.result_path, &actual)
+                    {
+                        let access = state.objects.read(&actual).collapse();
+                        state.heap.join(&access);
+                        result.retained.join(&access);
+                    }
                 }
             }
             state.values.insert(call.result.id.clone(), value);

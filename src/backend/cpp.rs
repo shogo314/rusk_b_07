@@ -9,6 +9,7 @@ pub(crate) fn emit(
     function: &Function,
     types: &BTreeMap<String, String>,
     functions: &[FunctionInfo],
+    summaries: &[crate::lir::ProgramFunction],
     optimize: bool,
     main: bool,
 ) -> String {
@@ -22,6 +23,12 @@ pub(crate) fn emit(
                     {
                         scalar.insert(result.id.clone());
                     }
+                    Instruction::Object {
+                        result,
+                        expression: Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. },
+                    } => {
+                        scalar.insert(result.id.clone());
+                    }
                     Instruction::Call(call)
                         if functions[call.function].result == "Unit"
                             || intrinsics::lower(call, &functions[call.function]).is_some() =>
@@ -33,7 +40,13 @@ pub(crate) fn emit(
             }
         }
     }
-    let persistent = super::storage::persistent(function);
+    let boolean_aliases = if optimize {
+        super::boolean_aliases::plan(function, functions, summaries)
+    } else {
+        BTreeMap::new()
+    };
+    let mut persistent = super::storage::persistent(function);
+    persistent.extend(boolean_aliases.values().cloned());
     let declaration = |value: &crate::hir::Value| {
         if persistent.contains(&value.id) {
             String::new()
@@ -48,6 +61,12 @@ pub(crate) fn emit(
     };
     let mut out = String::new();
     for slot in &function.slots {
+        if boolean_aliases
+            .get(&slot.id)
+            .is_some_and(|owner| *owner != slot.id)
+        {
+            continue;
+        }
         if persistent.contains(&slot.id) {
             let storage = if scalar.contains(&slot.id) {
                 "RuskTemporary"
@@ -57,15 +76,32 @@ pub(crate) fn emit(
             out += &format!("{storage}<{}> {};\n", types[&slot.ty], slot.id);
         }
     }
+    for (alias, owner) in &boolean_aliases {
+        if alias != owner {
+            out += &format!("RuskTemporary<bool>& {alias}={owner};\n");
+        }
+    }
     let release = |values: &[ValueId]| {
         values
             .iter()
+            .filter(|v| !boolean_aliases.get(*v).is_some_and(|owner| owner != *v))
             .map(|v| format!("{v}.reset();\n"))
             .collect::<String>()
     };
     for (index, block) in function.blocks.iter().enumerate() {
         out += &format!("rusk_block_{index}:{{\n");
         for instruction in &block.instructions {
+            if let Instruction::Declare { result, .. }
+            | Instruction::Object {
+                result,
+                expression: Rvalue::Share(_),
+            } = instruction
+                && boolean_aliases
+                    .get(&result.id)
+                    .is_some_and(|owner| *owner != result.id)
+            {
+                continue;
+            }
             match instruction {
                 Instruction::Literal { result, value } => {
                     let expression = match value {
@@ -105,7 +141,15 @@ pub(crate) fn emit(
                                 .collect::<Vec<_>>()
                                 .join(",")
                         ),
-                        Rvalue::BoolCopy(value) => format!("make_obj<bool>(*{})", value.id),
+                        Rvalue::BoolCopy(value) => format!(
+                            "{}<bool>(*{})",
+                            if scalar.contains(&result.id) {
+                                "RuskTemporary"
+                            } else {
+                                "make_obj"
+                            },
+                            value.id
+                        ),
                         Rvalue::Variant { index, fields } => format!(
                             "rusk_enum_make<{native},{index}>({})",
                             fields
@@ -116,8 +160,14 @@ pub(crate) fn emit(
                         ),
                         Rvalue::VariantTest { owner, index } => {
                             format!(
-                                "make_obj<bool>(rusk_enum_index<{}>({}->value)=={index})",
-                                types[&owner.ty], owner.id
+                                "{}<bool>(rusk_enum_index<{}>({}->value)=={index})",
+                                if scalar.contains(&result.id) {
+                                    "RuskTemporary"
+                                } else {
+                                    "make_obj"
+                                },
+                                types[&owner.ty],
+                                owner.id
                             )
                         }
                         Rvalue::VariantField {
