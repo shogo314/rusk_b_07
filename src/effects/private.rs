@@ -1,8 +1,8 @@
 //! Flow-insensitive allocation-site reachability for private aggregate stores.
 //! Sharing and rebinding union possible destinations; member stores are weak
 //! updates. Publication reaches every possible child, including older values
-//! from another branch or loop iteration. Calls remain a conservative boundary.
-use super::Projection;
+//! from another branch or loop iteration. Known nonretaining calls can forward root or member aliases.
+use super::{Effect, Projection, Summary, SummarySource};
 use crate::{
     hir::{Place, Rvalue, ValueId},
     lir::{Function, Operation, Terminator},
@@ -93,7 +93,7 @@ impl Graph {
         }
         value
     }
-    fn operation(&mut self, op: &Operation) {
+    fn operation(&mut self, op: &Operation, callees: Option<&[Summary]>) {
         match op {
             Operation::Declare { result, initial } => {
                 if let Some(initial) = initial {
@@ -147,10 +147,54 @@ impl Graph {
                 }
             }
             Operation::Call(call) => {
-                for arg in &call.args {
-                    self.expose(&self.get(&arg.id));
-                }
-                self.bind(&call.result.id, &Reference::unknown());
+                let args: Vec<_> = call.args.iter().map(|arg| self.get(&arg.id)).collect();
+                let known = callees
+                    .map(|callees| &callees[call.function])
+                    .filter(|callee| {
+                        matches!(
+                            callee.source,
+                            SummarySource::Inferred | SummarySource::NativeContract
+                        ) && callee.external_write == Effect::No
+                            && !callee.returned.unknown
+                            && callee
+                                .returned
+                                .aliases
+                                .iter()
+                                .all(|alias| alias.result_path.is_empty())
+                    });
+                let value = if let Some(callee) = known {
+                    for (arg, effect) in args.iter().zip(&callee.parameters) {
+                        if effect.write != Effect::No
+                            || effect.structural != Effect::No
+                            || effect.retained != Effect::No
+                        {
+                            self.expose(arg);
+                        }
+                    }
+                    // Fresh is not uniqueness. Do not create private allocation
+                    // sites from a summary of a callee's independent results.
+                    let mut value = if callee.returned.fresh || callee.returned.aliases.is_empty() {
+                        Reference::unknown()
+                    } else {
+                        Reference::default()
+                    };
+                    for alias in &callee.returned.aliases {
+                        let mut actual = args[alias.parameter].clone();
+                        for projection in &alias.parameter_path {
+                            actual = self.project(&actual, projection.clone());
+                        }
+                        value.join(&actual);
+                    }
+                    value
+                } else {
+                    // Unknown and aggregate-containing results may hide aliases.
+                    // Publish arguments rather than lose their reachability.
+                    for arg in &args {
+                        self.expose(arg);
+                    }
+                    Reference::unknown()
+                };
+                self.bind(&call.result.id, &value);
             }
             Operation::Literal { result, .. } => {
                 self.bind(&result.id, &Reference::unknown());
@@ -164,7 +208,7 @@ impl Graph {
     }
 }
 
-pub(super) fn destinations(body: &Function) -> BTreeSet<ValueId> {
+pub(super) fn destinations(body: &Function, callees: Option<&[Summary]>) -> BTreeSet<ValueId> {
     let mut graph = Graph::default();
     // Sites and member keys come only from finite LIR instructions. Weak
     // updates grow sets monotonically, so cycles need no unbounded paths.
@@ -172,7 +216,7 @@ pub(super) fn destinations(body: &Function) -> BTreeSet<ValueId> {
         let before = graph.clone();
         for block in &body.blocks {
             for op in &block.instructions {
-                graph.operation(op);
+                graph.operation(op, callees);
             }
             if let Terminator::Return {
                 value: Some(value), ..

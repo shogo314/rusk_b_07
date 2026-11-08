@@ -202,6 +202,11 @@ fn diagnostics_point_to_returns_and_retaining_calls_before_ir_or_cpp_output() {
             4,
             "argument 2 of 'push_back'",
         ),
+        (
+            "struct Box{value:Int;}fn identity(b:Box)->Box{return b;}fn bad(noescape value:Int,values:Vec<Int>) {\nlet box:=identity(Box{value:0});\nbox.value:=value;\nvalues.push_back(value);\n}\nlet a:Vec<Int>:=[];bad(1,a);",
+            4,
+            "argument 2 of 'push_back'",
+        ),
     ] {
         for stage in ["hir", "lir", "cpp"] {
             let case = Case::new(source);
@@ -315,7 +320,7 @@ fn f(noescape x:Int){let b:=Box{value:0};b.value:=x;foreign(b);}f(1);
 #[test]
 fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
     let case = Case::new(
-        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn nested(x:Int)->Int{let b:=(Box{value:0},0);b[0].value:=x;return b[0].value+1;}\nwt plain(1),explicit(2),nested(3);",
+        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn nested(x:Int)->Int{let b:=(Box{value:0},0);b[0].value:=x;return b[0].value+1;}\nfn identity(b:Box)->Box{return b;}\nfn via_call(x:Int)->Int{let b:=Box{value:0};let alias:=identity(b);alias.value:=x;return b.value+1;}\nwt plain(1),explicit(2),nested(3),via_call(4);",
     );
     for stage in ["hir", "lir"] {
         let output = case.compile_with_options(&["--emit", stage]);
@@ -325,7 +330,7 @@ fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
             String::from_utf8_lossy(&output.stderr)
         );
         let dump = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
-        for name in ["plain", "explicit", "nested"] {
+        for name in ["plain", "explicit", "nested", "via_call"] {
             let function = &dump[dump.find(&format!("name: \"{name}\",")).unwrap()..];
             let effects = &function[function.find("effects: Summary").unwrap()..];
             let parameter = effects
@@ -388,6 +393,7 @@ struct Pair{left:Cell;right:Cell;}
 fn read(c:Cell)->Int{return c.value+1;}
 fn scoped(noescape x:Int)->Int{
  let pair:=Pair{left:Cell{value:0},right:Cell{value:7}};
+ let published:Vec<Cell>:=[];published.push_back(pair.right);
  wt read(pair.right);pair.left.value:=x;return pair.left.value+1;
 }
 wt scoped(3);
@@ -412,6 +418,69 @@ fn nested_publications_reach_children_before_and_after_stores() {
     ] {
         rejects(
             &format!("struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}{body}"),
+            "cannot prove noescape for parameter 'x'",
+        );
+    }
+}
+
+#[test]
+fn nonretaining_calls_forward_private_roots_members_choices_recursion_and_captures() {
+    succeeds(
+        r#"
+struct Cell{value:Int;}
+struct Holder{cell:Cell;}
+fn identity(c:Cell)->Cell{return c;}
+fn getter(h:Holder)->Cell{return h.cell;}
+fn forwarded(h:Holder)->Cell{return identity(getter(h));}
+fn read(c:Cell)->Int{return c.value+1;}
+fn recursive(c:Cell,n:Int)->Cell{if n==0{return c;}return recursive(c,n-1);}
+fn odd(c:Cell,n:Int)->Cell{if n==0{return c;}return even(c,n-1);}
+fn even(c:Cell,n:Int)->Cell{if n==0{return c;}return odd(c,n-1);}
+fn choose(a:Cell,b:Cell,flag:Bool)->Cell{if flag{return a;}return b;}
+fn direct(noescape x:Int)->Int{
+ let c:=Cell{value:0};let alias:=identity(c);alias.value:=x;return c.value+1;
+}
+fn nested(noescape x:Int)->Int{
+ let h:=Holder{cell:Cell{value:0}};let alias:=forwarded(h);alias.value:=x;return h.cell.value+2;
+}
+fn reading(noescape x:Int)->Int{let c:=Cell{value:0};c.value:=x;return read(c);}
+fn recursing(noescape x:Int)->Int{
+ let c:=odd(recursive(Cell{value:0},3),2);c.value:=x;return c.value+1;
+}
+fn choosing(noescape x:Int,flag:Bool)->Int{
+ let a:=Cell{value:0};let b:=Cell{value:1};let selected:=choose(a,b,flag);
+ selected.value:=x;return a.value+b.value;
+}
+fn captured(noescape x:Int)->Int{
+ let h:=Holder{cell:Cell{value:0}};let get:=()=>h.cell;let c:=get();
+ c.value:=x;return h.cell.value+3;
+}
+wt direct(3),nested(3),reading(3),recursing(3),choosing(3,true),choosing(3,false),captured(3);
+"#,
+        "4 5 4 4 4 3 6\n",
+    );
+}
+
+#[test]
+fn forwarding_does_not_hide_publication_mutation_or_mixed_external_origins() {
+    for body in [
+        "fn f(noescape x:Int)->Cell{let c:=identity(Cell{value:0});c.value:=x;return c;}f(1);",
+        "fn f(noescape x:Int)->Holder{let h:=Holder{cell:Cell{value:0}};let c:=getter(h);c.value:=x;return h;}f(1);",
+        "fn f(noescape x:Int,external:Cell,flag:Bool){let c:=choose(Cell{value:0},external,flag);c.value:=x;}f(1,Cell{value:0},true);",
+        "fn save(c:Cell,items:Vec<Cell>)->Cell{items.push_back(c);return c;}fn f(noescape x:Int,items:Vec<Cell>){let c:=save(Cell{value:0},items);c.value:=x;}let items:Vec<Cell>:=[];f(1,items);",
+        "fn replace(h:Holder,c:Cell)->Cell{h.cell:=c;return h.cell;}fn f(noescape x:Int,external:Cell){let h:=Holder{cell:Cell{value:0}};let c:=replace(h,external);c.value:=x;}f(1,Cell{value:0});",
+        "fn recursive(c:Cell,items:Vec<Cell>,n:Int)->Cell{if n==0{items.push_back(c);return c;}return recursive(c,items,n-1);}fn f(noescape x:Int,items:Vec<Cell>){let c:=recursive(Cell{value:0},items,3);c.value:=x;}let items:Vec<Cell>:=[];f(1,items);",
+        "fn f(noescape x:Int,items:Vec<Cell>){let h:=Holder{cell:Cell{value:0}};let c:=getter(h);items.push_back(c);h.cell.value:=x;}let items:Vec<Cell>:=[];f(1,items);",
+        "fn f(noescape x:Int,items:Vec<Cell>){let h:=Holder{cell:Cell{value:0}};h.cell.value:=x;items.push_back(getter(h));}let items:Vec<Cell>:=[];f(1,items);",
+        "fn create()->Cell{return Cell{value:0};}fn f(noescape x:Int){let c:=create();c.value:=x;}f(1);",
+        "fn maybe(c:Cell,flag:Bool)->Cell{if flag{return c;}return Cell{value:0};}fn f(noescape x:Int){let c:=maybe(Cell{value:0},true);c.value:=x;}f(1);",
+        "fn wrap(c:Cell)->Holder{return Holder{cell:c};}fn f(noescape x:Int){let c:=Cell{value:0};let h:=wrap(c);h.cell.value:=x;}f(1);",
+        r#"extern fn foreign(c:Cell)->Cell{cpp_name:"foreign",code:"auto foreign(auto c,Loc){return c;}",}fn f(noescape x:Int){let c:=foreign(Cell{value:0});c.value:=x;}f(1);"#,
+    ] {
+        rejects(
+            &format!(
+                "struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}fn identity(c:Cell)->Cell{{return c;}}fn getter(h:Holder)->Cell{{return h.cell;}}fn choose(a:Cell,b:Cell,flag:Bool)->Cell{{if flag{{return a;}}return b;}}{body}"
+            ),
             "cannot prove noescape for parameter 'x'",
         );
     }

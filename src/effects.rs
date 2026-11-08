@@ -528,7 +528,11 @@ fn operation(
         | Operation::AnnotateEscape { .. } => {}
     }
 }
-fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Summary {
+fn analyze_function(
+    function: &lir::ProgramFunction,
+    callees: &[Summary],
+    private: &BTreeSet<ValueId>,
+) -> Summary {
     let Some(body) = &function.body else {
         return if function.effects.source == SummarySource::NativeContract {
             function.effects.clone()
@@ -536,7 +540,6 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
             Summary::unknown(function.params.len(), SummarySource::Opaque)
         };
     };
-    let private = private::destinations(body);
     let mut summary = Summary::inferred(function.params.len());
     let initial = State {
         values: (0..function.params.len())
@@ -551,7 +554,7 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
         let mut state = entries[index].as_ref().unwrap().clone();
         let block = &body.blocks[index];
         for op in &block.instructions {
-            operation(op, &mut state, &mut summary, callees, &private);
+            operation(op, &mut state, &mut summary, callees, private);
         }
         let mut successors = vec![];
         match &block.terminator {
@@ -648,9 +651,9 @@ fn first_escape(
     callees: &[Summary],
     parameter: usize,
     program: &lir::Program,
+    private: &BTreeSet<ValueId>,
 ) -> Option<EscapeWitness> {
     let body = function.body.as_ref()?;
-    let private = private::destinations(body);
     let initial = State {
         values: (0..function.params.len())
             .map(|i| (ValueId::Parameter(i), ReturnOrigins::parameter(i)))
@@ -666,7 +669,7 @@ fn first_escape(
         for op in &block.instructions {
             let before = state.clone();
             let mut step = Summary::inferred(function.params.len());
-            operation(op, &mut state, &mut step, callees, &private);
+            operation(op, &mut state, &mut step, callees, private);
             if step.parameters[parameter].escape != Effect::No {
                 let (span, effect, reason, route) = match op {
                     Operation::Call(call) => {
@@ -777,7 +780,13 @@ pub(crate) fn validate_noescape(program: &lir::Program) -> Result<(), String> {
                     .iter()
                     .map(|f| f.effects.clone())
                     .collect();
-                let witness = first_escape(function, &callees, *parameter, program);
+                // Reconstruct the same frozen proof used by inference, rather
+                // than deriving a different proof from the final summaries.
+                let structural = private_plans(program, None);
+                let baseline = solve(program, &structural);
+                let plans = private_plans(program, Some(&baseline));
+                let witness =
+                    first_escape(function, &callees, *parameter, program, &plans[function.id]);
                 let span = witness
                     .as_ref()
                     .and_then(|w| w.span.as_ref())
@@ -805,9 +814,37 @@ pub(crate) fn validate_noescape(program: &lir::Program) -> Result<(), String> {
     }
     Ok(())
 }
-/// Solve recursive calls to a fixed point. Recursive return provenance starts
-/// at bottom; unbounded paths/alias sets widen to unknown rather than guessing.
+fn private_plans(program: &lir::Program, callees: Option<&[Summary]>) -> Vec<BTreeSet<ValueId>> {
+    program
+        .functions
+        .iter()
+        .map(|function| {
+            function
+                .body
+                .as_ref()
+                .map(|body| private::destinations(body, callees))
+                .unwrap_or_default()
+        })
+        .collect()
+}
+
 pub(crate) fn analyze(program: &lir::Program) -> Vec<Summary> {
+    // Freeze call facts before using them to prove private stores. Otherwise a
+    // store's retention and the proof permitting that store could depend on
+    // one another, making the recursive equation non-monotone.
+    let structural = private_plans(program, None);
+    let baseline = solve(program, &structural);
+    let refined = private_plans(program, Some(&baseline));
+    if refined == structural {
+        baseline
+    } else {
+        solve(program, &refined)
+    }
+}
+
+/// Solve recursive calls with fixed private destinations. Return provenance
+/// starts at bottom; unbounded paths and alias sets widen to unknown.
+fn solve(program: &lir::Program, private: &[BTreeSet<ValueId>]) -> Vec<Summary> {
     let mut summaries: Vec<_> = program
         .functions
         .iter()
@@ -863,7 +900,7 @@ pub(crate) fn analyze(program: &lir::Program) -> Vec<Summary> {
         let mut next: Vec<_> = program
             .functions
             .iter()
-            .map(|f| analyze_function(f, &summaries))
+            .map(|f| analyze_function(f, &summaries, &private[f.id]))
             .collect();
         for (i, recursive) in recursive.iter().enumerate() {
             if *recursive {

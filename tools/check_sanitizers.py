@@ -190,6 +190,16 @@ fn repeated(noescape x:Int)->Int{
 }
 let text:="abc";wt nested(text[0]);text.push_back('!');wt text,repeated(3);
 ''', b'', b'a\n1\nabc! 9\n'),
+    ('''struct Letter{value:Char;}
+struct Holder{letter:Letter;}
+fn identity(h:Holder)->Holder{return h;}
+fn child(h:Holder)->Letter{return h.letter;}
+fn scoped(noescape x:Char)->Int{
+ let h:=Holder{letter:Letter{value:'?'}};let alias:=child(identity(h));
+ alias.value:=x;wt h.letter.value;return 1;
+}
+let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
+''', b'', b'a\n1\nabc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 
