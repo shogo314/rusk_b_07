@@ -315,7 +315,7 @@ fn f(noescape x:Int){let b:=Box{value:0};b.value:=x;foreign(b);}f(1);
 #[test]
 fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
     let case = Case::new(
-        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nwt plain(1),explicit(2);",
+        "struct Box{value:Int;}\nfn plain(x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn explicit(escape x:Int)->Int{let b:=Box{value:0};b.value:=x;return b.value+1;}\nfn nested(x:Int)->Int{let b:=(Box{value:0},0);b[0].value:=x;return b[0].value+1;}\nwt plain(1),explicit(2),nested(3);",
     );
     for stage in ["hir", "lir"] {
         let output = case.compile_with_options(&["--emit", stage]);
@@ -325,7 +325,7 @@ fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
             String::from_utf8_lossy(&output.stderr)
         );
         let dump = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
-        for name in ["plain", "explicit"] {
+        for name in ["plain", "explicit", "nested"] {
             let function = &dump[dump.find(&format!("name: \"{name}\",")).unwrap()..];
             let effects = &function[function.find("effects: Summary").unwrap()..];
             let parameter = effects
@@ -340,5 +340,79 @@ fn private_stores_are_inferred_without_annotations_and_preserved_in_ir() {
                 "{parameter}"
             );
         }
+    }
+}
+
+#[test]
+fn nested_private_destinations_follow_fields_payloads_and_weak_stores() {
+    succeeds(
+        r#"
+struct Cell{value:Int;}
+struct Holder{cell:Cell;count:Int;}
+enum Wrapped{Full(Cell),Empty}
+fn nested(noescape x:Int)->Int{
+ let child:=Cell{value:0};let outer:=Holder{cell:child,count:1};
+ let alias:=outer.cell;alias.value:=x;return outer.cell.value+outer.count;
+}
+fn stored(noescape x:Int)->Int{
+ let outer:=Holder{cell:Cell{value:0},count:0};let child:=Cell{value:1};
+ outer.cell:=child;child.value:=x;return outer.cell.value+1;
+}
+fn payload(noescape x:Int)->Int{
+ let wrapped:=Wrapped::Full(Cell{value:0});
+ let child:=match wrapped{Full(c)=>c,Empty=>Cell{value:0},};
+ child.value:=x;return child.value+2;
+}
+fn generic<T>(noescape x:T){let child:=(x,0);let parent:=(child,0);parent[0][0]:=x;}
+fn snapshot(noescape x:Int)->Int{
+ let outer:=(Cell{value:0},0);let old:=outer[0];outer[0]:=Cell{value:1};
+ old.value:=x;return old.value+outer[0].value;
+}
+fn repeated(noescape x:Int)->Int{
+ let outer:=(Cell{value:0},0);let total:=0;
+ for i in 0..3{let old:=outer[0];outer[0]:=Cell{value:1};old.value:=x;total+=old.value;}
+ return total;
+}
+let x:=3;wt nested(x),stored(x),payload(x),snapshot(x),repeated(x);generic([1,2]);
+"#,
+        "4 4 5 4 9\n",
+    );
+}
+
+#[test]
+fn publishing_one_child_does_not_publish_its_private_parent_or_sibling() {
+    succeeds(
+        r#"
+struct Cell{value:Int;}
+struct Pair{left:Cell;right:Cell;}
+fn read(c:Cell)->Int{return c.value+1;}
+fn scoped(noescape x:Int)->Int{
+ let pair:=Pair{left:Cell{value:0},right:Cell{value:7}};
+ wt read(pair.right);pair.left.value:=x;return pair.left.value+1;
+}
+wt scoped(3);
+"#,
+        "8\n4\n",
+    );
+}
+
+#[test]
+fn nested_publications_reach_children_before_and_after_stores() {
+    for body in [
+        "fn f(noescape x:Int)->Holder{let child:=Cell{value:0};let outer:=Holder{cell:child};child.value:=x;return outer;}f(1);",
+        "fn f(noescape x:Int)->Holder{let child:=Cell{value:0};child.value:=x;let outer:=Holder{cell:child};return outer;}f(1);",
+        "fn f(noescape x:Int,outer:Holder){let child:=Cell{value:0};outer.cell:=child;child.value:=x;}f(1,Holder{cell:Cell{value:0}});",
+        "fn f(noescape x:Int,outer:Holder){let child:=Cell{value:0};child.value:=x;outer.cell:=child;}f(1,Holder{cell:Cell{value:0}});",
+        "fn f(noescape x:Int,external:Cell){let outer:=Holder{cell:Cell{value:0}};outer.cell:=external;outer.cell.value:=x;}f(1,Cell{value:0});",
+        "fn replace(outer:Holder,c:Cell){outer.cell:=c;}fn f(noescape x:Int,external:Cell){let outer:=Holder{cell:Cell{value:0}};replace(outer,external);outer.cell.value:=x;}f(1,Cell{value:0});",
+        "fn f(noescape x:Int,items:Vec<Holder>,flag:Bool){let child:=Cell{value:0};let outer:=Holder{cell:child};if flag{items.push_back(outer);}child.value:=x;}let items:Vec<Holder>:=[];f(1,items,true);",
+        "fn f(noescape x:Int,items:Vec<Holder>){let outer:=Holder{cell:Cell{value:0}};for i in 0..2{let old:=outer.cell;outer.cell:=Cell{value:0};old.value:=x;items.push_back(outer);}}let items:Vec<Holder>:=[];f(1,items);",
+        "let f:=(noescape x:Int)=>{let child:=Cell{value:0};let outer:=Holder{cell:child};child.value:=x;()=>outer.cell.value};let callback:=f(1);wt callback();",
+        "enum Wrapped{Full(Cell),Empty}fn f(noescape x:Int)->Wrapped{let child:=Cell{value:0};let outer:=Wrapped::Full(child);child.value:=x;return outer;}f(1);",
+    ] {
+        rejects(
+            &format!("struct Cell{{value:Int;}}struct Holder{{cell:Cell;}}{body}"),
+            "cannot prove noescape for parameter 'x'",
+        );
     }
 }

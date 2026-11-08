@@ -177,6 +177,19 @@ fn scoped(noescape x:Char)->Int{let b:=Letter{value:'?'};b.value:=x;wt b.value;r
 let x:=2;update(x);wt x;
 let text:="abc";wt scoped(text[0]);text.push_back('!');wt text;
 ''', b'', b'3\na\n1\nabc!\n'),
+    ('''struct Letter{value:Char;}
+fn nested(noescape x:Char)->Int{
+ let child:=Letter{value:'?'};let outer:=(child,0);let alias:=outer[0];
+ alias.value:=x;wt outer[0].value;return 1;
+}
+struct Cell{value:Int;}
+fn repeated(noescape x:Int)->Int{
+ let outer:=(Cell{value:0},0);let total:=0;
+ for i in 0..3{let old:=outer[0];outer[0]:=Cell{value:1};old.value:=x;total+=old.value;}
+ return total;
+}
+let text:="abc";wt nested(text[0]);text.push_back('!');wt text,repeated(3);
+''', b'', b'a\n1\nabc! 9\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 
