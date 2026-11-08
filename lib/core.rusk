@@ -25,247 +25,296 @@ extern type Unit {
 }
 
 extern fn copy(x: Int) -> Int {
+    effects: "read_fresh",
     cpp_name: "copy_Int",
     code: "inline Obj<std::int64_t> copy_Int(Obj<std::int64_t> x, Loc) { return make_obj<std::int64_t>(*x); }",
 }
 
 extern fn __assign__(x: Int, y: Int) {
+    effects: "write_first",
     cpp_name: "assign_Int",
     code: "inline void assign_Int(Obj<std::int64_t> x, Obj<std::int64_t> y, Loc) { *x = *y; }",
 }
 
 extern fn __write__(x: Int) {
+    effects: "io_write",
     cpp_name: "write_Int",
     code: "inline void write_Int(Obj<std::int64_t> x, Loc) { rusk_write(*x); }",
 }
 
 extern fn copy(x: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "copy_Bool",
     code: "inline Obj<bool> copy_Bool(Obj<bool> x, Loc) { return make_obj<bool>(*x); }",
 }
 
 extern fn __assign__(x: Bool, y: Bool) {
+    effects: "write_first",
     cpp_name: "assign_Bool",
     code: "inline void assign_Bool(Obj<bool> x, Obj<bool> y, Loc) { *x = *y; }",
 }
 
 extern fn __write__(x: Bool) {
+    effects: "io_write",
     cpp_name: "write_Bool",
     code: "inline void write_Bool(Obj<bool> x, Loc) { rusk_write(*x); }",
 }
 
 extern fn copy(x: Char) -> Char {
+    effects: "read_fresh",
     cpp_name: "copy_Char",
     code: "inline Obj<char> copy_Char(Obj<char> x, Loc) { return make_obj<char>(*x); }",
 }
 
 extern fn __assign__(x: Char, y: Char) {
+    effects: "write_first",
     cpp_name: "assign_Char",
     code: "inline void assign_Char(Obj<char> x, Obj<char> y, Loc) { *x = *y; }",
 }
 
 extern fn __write__(x: Char) {
+    effects: "io_write",
     cpp_name: "write_Char",
     code: "inline void write_Char(Obj<char> x, Loc) { rusk_write(*x); }",
 }
 
 extern fn copy(x: Str) -> Str {
+    effects: "read_fresh",
     cpp_name: "copy_Str",
     code: "inline Obj<std::string> copy_Str(Obj<std::string> x, Loc) { return make_obj<std::string>(*x); }",
 }
 
 extern fn __assign__(x: Str, y: Str) {
+    effects: "checked_resize_first",
     cpp_name: "assign_Str",
     code: "inline void assign_Str(Obj<std::string> x, Obj<std::string> y, Loc loc) { if(x->size()!=y->size()) { check_string_resize(x,loc); *x=*y; } else { std::copy(y->begin(),y->end(),x->begin()); } }",
 }
 
 extern fn __write__(x: Str) {
+    effects: "io_write",
     cpp_name: "write_Str",
     code: "inline void write_Str(Obj<std::string> x, Loc) { rusk_write(*x); }",
 }
 
 extern fn copy(x: Unit) -> Unit {
+    effects: "read_fresh",
     cpp_name: "copy_Unit",
     code: "inline Obj<Unit> copy_Unit(Obj<Unit> x, Loc) { return make_obj<Unit>(*x); }",
 }
 
 extern fn __assign__(x: Unit, y: Unit) {
+    effects: "write_first",
     cpp_name: "assign_Unit",
     code: "inline void assign_Unit(Obj<Unit> x, Obj<Unit> y, Loc) { *x = *y; }",
 }
 
 extern fn __add__(a: Int, b: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "add_Int",
     code: "inline Obj<std::int64_t> add_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc loc) { return make_obj<std::int64_t>(checked_int((__int128)*a + *b, loc)); }",
 }
 
 extern fn __sub__(a: Int, b: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "sub_Int",
     code: "inline Obj<std::int64_t> sub_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc loc) { return make_obj<std::int64_t>(checked_int((__int128)*a - *b, loc)); }",
 }
 
 extern fn __mul__(a: Int, b: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "mul_Int",
     code: "inline Obj<std::int64_t> mul_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc loc) { return make_obj<std::int64_t>(checked_int((__int128)*a * *b, loc)); }",
 }
 
 extern fn __div__(a: Int, b: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "div_Int",
     code: "inline Obj<std::int64_t> div_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc loc) {\nif (*b == 0) fail(loc, \"division by zero\");\n    __int128 a0 = *a, b0 = *b;\n    __int128 q = a0 / b0, r = a0 % b0;\n    if (r != 0 && ((r < 0) != (b0 < 0))) { --q; r += b0; }\n    return make_obj<std::int64_t>(checked_int(q, loc));\n}",
 }
 
 extern fn __mod__(a: Int, b: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "mod_Int",
     code: "inline Obj<std::int64_t> mod_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc loc) {\nif (*b == 0) fail(loc, \"division by zero\");\n    __int128 a0 = *a, b0 = *b;\n    __int128 q = a0 / b0, r = a0 % b0;\n    if (r != 0 && ((r < 0) != (b0 < 0))) { --q; r += b0; }\n    return make_obj<std::int64_t>(checked_int(r, loc));\n}",
 }
 
 extern fn __neg__(x: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "neg_Int",
     code: "inline Obj<std::int64_t> neg_Int(Obj<std::int64_t> x, Loc loc) { return make_obj<std::int64_t>(checked_int(-(__int128)*x, loc)); }",
 }
 
 extern fn __pos__(x: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "pos_Int",
     code: "inline Obj<std::int64_t> pos_Int(Obj<std::int64_t> x, Loc loc) { return make_obj<std::int64_t>(checked_int((__int128)*x, loc)); }",
 }
 
 extern fn __read__() -> Int {
+    effects: "io_read_fresh",
     cpp_name: "read_Int",
     code: "inline Obj<std::int64_t> read_Int(Loc loc) {\n    auto token = read_token(loc);\n    const char* first = token.data(); const char* last = first + token.size();\n    if (first != last && *first == '+') { ++first; if (first == last || *first < '0' || *first > '9') fail(loc, \"invalid integer input\"); }\n    std::int64_t value = 0;\n    auto result = std::from_chars(first, last, value);\n    if (result.ec == std::errc::result_out_of_range) fail(loc, \"integer input out of range\");\n    if (result.ec != std::errc{} || result.ptr != last) fail(loc, \"invalid integer input\");\n    return make_obj<std::int64_t>(value);\n}",
 }
 
 extern fn __read__() -> Str {
+    effects: "io_read_fresh",
     cpp_name: "read_Str",
     code: "inline Obj<std::string> read_Str(Loc loc) {\n    auto value = read_token(loc); require_ascii(value, loc); return make_obj<std::string>(value);\n}",
 }
 
 extern fn __read__() -> Char {
+    effects: "io_read_fresh",
     cpp_name: "read_Char",
     code: "inline Obj<char> read_Char(Loc loc) {\n    while (ascii_space(rusk_peek())) rusk_get();\n    int c = rusk_get();\n    if (c == std::char_traits<char>::eof()) fail(loc, \"unexpected end of input\");\n    if (c > 127) fail(loc, \"non-ASCII input\");\n    return make_obj<char>(static_cast<char>(c));\n}",
 }
 
 extern fn read_line() -> Str {
+    effects: "io_read_fresh",
     cpp_name: "read_line_Str",
     code: "inline Obj<std::string> read_line_Str(Loc loc) { auto value=rusk_read_line(loc); require_ascii(value,loc); return make_obj<std::string>(value); }",
 }
 
 // Conditions and value comparisons. Hook names are provisional.
 extern fn __bool__(x: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "bool_Int",
     code: "inline Obj<bool> bool_Int(Obj<std::int64_t> x, Loc) { return make_obj<bool>(*x != 0); }",
 }
 
 extern fn __eq__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "eq_Int",
     code: "inline Obj<bool> eq_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a == *b); }",
 }
 
 extern fn __ne__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ne_Int",
     code: "inline Obj<bool> ne_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a != *b); }",
 }
 
 extern fn __lt__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "lt_Int",
     code: "inline Obj<bool> lt_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a < *b); }",
 }
 
 extern fn __le__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "le_Int",
     code: "inline Obj<bool> le_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a <= *b); }",
 }
 
 extern fn __gt__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "gt_Int",
     code: "inline Obj<bool> gt_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a > *b); }",
 }
 
 extern fn __ge__(a: Int, b: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ge_Int",
     code: "inline Obj<bool> ge_Int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<bool>(*a >= *b); }",
 }
 
 extern fn __bool__(x: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "bool_Bool",
     code: "inline Obj<bool> bool_Bool(Obj<bool> x, Loc) { return make_obj<bool>(*x != 0); }",
 }
 
 extern fn __eq__(a: Bool, b: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "eq_Bool",
     code: "inline Obj<bool> eq_Bool(Obj<bool> a, Obj<bool> b, Loc) { return make_obj<bool>(*a == *b); }",
 }
 
 extern fn __ne__(a: Bool, b: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ne_Bool",
     code: "inline Obj<bool> ne_Bool(Obj<bool> a, Obj<bool> b, Loc) { return make_obj<bool>(*a != *b); }",
 }
 
 extern fn __bool__(x: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "bool_Char",
     code: "inline Obj<bool> bool_Char(Obj<char> x, Loc) { return make_obj<bool>(*x != 0); }",
 }
 
 extern fn __eq__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "eq_Char",
     code: "inline Obj<bool> eq_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a == *b); }",
 }
 
 extern fn __ne__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ne_Char",
     code: "inline Obj<bool> ne_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a != *b); }",
 }
 
 extern fn __lt__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "lt_Char",
     code: "inline Obj<bool> lt_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a < *b); }",
 }
 
 extern fn __le__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "le_Char",
     code: "inline Obj<bool> le_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a <= *b); }",
 }
 
 extern fn __gt__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "gt_Char",
     code: "inline Obj<bool> gt_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a > *b); }",
 }
 
 extern fn __ge__(a: Char, b: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ge_Char",
     code: "inline Obj<bool> ge_Char(Obj<char> a, Obj<char> b, Loc) { return make_obj<bool>(*a >= *b); }",
 }
 
 extern fn __bool__(x: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "bool_Str",
     code: "inline Obj<bool> bool_Str(Obj<std::string> x, Loc) { return make_obj<bool>(!x->empty()); }",
 }
 
 extern fn __eq__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "eq_Str",
     code: "inline Obj<bool> eq_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a == *b); }",
 }
 
 extern fn __ne__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ne_Str",
     code: "inline Obj<bool> ne_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a != *b); }",
 }
 
 extern fn __lt__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "lt_Str",
     code: "inline Obj<bool> lt_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a < *b); }",
 }
 
 extern fn __le__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "le_Str",
     code: "inline Obj<bool> le_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a <= *b); }",
 }
 
 extern fn __gt__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "gt_Str",
     code: "inline Obj<bool> gt_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a > *b); }",
 }
 
 extern fn __ge__(a: Str, b: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "ge_Str",
     code: "inline Obj<bool> ge_Str(Obj<std::string> a, Obj<std::string> b, Loc) { return make_obj<bool>(*a >= *b); }",
 }
@@ -275,138 +324,172 @@ extern fn __ge__(a: Str, b: Str) -> Bool {
 extern type Range { cpp_name: "RuskRange", }
 extern type RangeIter { cpp_name: "RuskRangeIter", }
 extern fn __range__(start: Int, end: Int) -> Range {
+    effects: "read_fresh",
     cpp_name: "basic_function_0",
     code: "Obj<RuskRange> basic_function_0(Obj<std::int64_t> start, Obj<std::int64_t> end, [[maybe_unused]] Loc loc) { return make_obj<RuskRange>(RuskRange{*start,*end}); }",
 }
 extern fn __iter__(r: Range) -> RangeIter {
+    effects: "read_fresh",
     cpp_name: "basic_function_1",
     code: "Obj<RuskRangeIter> basic_function_1(Obj<RuskRange> r, [[maybe_unused]] Loc loc) { return make_obj<RuskRangeIter>(RuskRangeIter{r->start,r->end}); }",
 }
 extern fn __iter_has_next__(it: RangeIter) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_2",
     code: "Obj<bool> basic_function_2(Obj<RuskRangeIter> it, [[maybe_unused]] Loc loc) { return make_obj<bool>(it->next<it->end); }",
 }
 extern fn __iter_next__(it: RangeIter) -> Int {
+    effects: "checked_mutate_fresh",
     cpp_name: "basic_function_3",
     code: "Obj<std::int64_t> basic_function_3(Obj<RuskRangeIter> it, [[maybe_unused]] Loc loc) { if(it->next>=it->end) fail(loc,\"iterator exhausted\"); auto value=it->next; ++it->next; return make_obj<std::int64_t>(value); }",
 }
 extern fn __not__(x: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_4",
     code: "Obj<bool> basic_function_4(Obj<std::int64_t> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(!(*x!=0)); }",
 }
 extern fn __not__(x: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_5",
     code: "Obj<bool> basic_function_5(Obj<bool> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(!(*x!=0)); }",
 }
 extern fn __not__(x: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_6",
     code: "Obj<bool> basic_function_6(Obj<char> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(!(*x!=0)); }",
 }
 extern fn __not__(x: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_7",
     code: "Obj<bool> basic_function_7(Obj<std::string> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(!(!x->empty())); }",
 }
 extern fn Int(x: Int) -> Int {
+    effects: "read_fresh",
     cpp_name: "basic_function_8",
     code: "Obj<std::int64_t> basic_function_8(Obj<std::int64_t> x, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(*x); }",
 }
 extern fn Bool(x: Int) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_9",
     code: "Obj<bool> basic_function_9(Obj<std::int64_t> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(*x!=0); }",
 }
 extern fn Char(x: Int) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_10",
     code: "Obj<char> basic_function_10(Obj<std::int64_t> x, [[maybe_unused]] Loc loc) { return make_obj<char>(checked_char(*x,loc)); }",
 }
 extern fn Str(x: Int) -> Str {
+    effects: "read_fresh",
     cpp_name: "basic_function_11",
     code: "Obj<std::string> basic_function_11(Obj<std::int64_t> x, [[maybe_unused]] Loc loc) { return make_obj<std::string>(std::to_string(*x)); }",
 }
 extern fn Int(x: Bool) -> Int {
+    effects: "read_fresh",
     cpp_name: "basic_function_12",
     code: "Obj<std::int64_t> basic_function_12(Obj<bool> x, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(*x); }",
 }
 extern fn Bool(x: Bool) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_13",
     code: "Obj<bool> basic_function_13(Obj<bool> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(*x!=0); }",
 }
 extern fn Char(x: Bool) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_14",
     code: "Obj<char> basic_function_14(Obj<bool> x, [[maybe_unused]] Loc loc) { return make_obj<char>(checked_char(*x,loc)); }",
 }
 extern fn Str(x: Bool) -> Str {
+    effects: "read_fresh",
     cpp_name: "basic_function_15",
     code: "Obj<std::string> basic_function_15(Obj<bool> x, [[maybe_unused]] Loc loc) { return make_obj<std::string>((*x ? \"Yes\" : \"No\")); }",
 }
 extern fn Int(x: Char) -> Int {
+    effects: "read_fresh",
     cpp_name: "basic_function_16",
     code: "Obj<std::int64_t> basic_function_16(Obj<char> x, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(*x); }",
 }
 extern fn Bool(x: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_17",
     code: "Obj<bool> basic_function_17(Obj<char> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(*x!=0); }",
 }
 extern fn Char(x: Char) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_18",
     code: "Obj<char> basic_function_18(Obj<char> x, [[maybe_unused]] Loc loc) { return make_obj<char>(checked_char(*x,loc)); }",
 }
 extern fn Str(x: Char) -> Str {
+    effects: "read_fresh",
     cpp_name: "basic_function_19",
     code: "Obj<std::string> basic_function_19(Obj<char> x, [[maybe_unused]] Loc loc) { return make_obj<std::string>(std::string(1,*x)); }",
 }
 extern fn Str(x: Str) -> Str {
+    effects: "read_fresh",
     cpp_name: "basic_function_20",
     code: "Obj<std::string> basic_function_20(Obj<std::string> x, [[maybe_unused]] Loc loc) { return make_obj<std::string>(*x); }",
 }
 extern fn Bool(x: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_21",
     code: "Obj<bool> basic_function_21(Obj<std::string> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(!x->empty()); }",
 }
 extern fn Int(x: Str) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_22",
     code: "Obj<std::int64_t> basic_function_22(Obj<std::string> x, [[maybe_unused]] Loc loc) { const auto& s=*x; const char* first=s.data(); const char* last=first+s.size(); if(first!=last && *first=='+') { ++first; if(first==last||*first<'0'||*first>'9') fail(loc,\"invalid integer conversion\"); } std::int64_t n=0; auto result=std::from_chars(first,last,n); if(result.ec!=std::errc{}||result.ptr!=last) fail(loc,\"invalid or out of range integer conversion\"); return make_obj<std::int64_t>(n); }",
 }
 extern fn __read__() -> Bool {
+    effects: "io_read_fresh",
     cpp_name: "basic_function_23",
     code: "Obj<bool> basic_function_23([[maybe_unused]] Loc loc) { return read_value<bool>(loc); }",
 }
 extern fn len(s: Str) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_24",
     code: "Obj<std::int64_t> basic_function_24(Obj<std::string> s, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(checked_int(static_cast<__int128>(s->size()),loc)); }",
 }
 extern fn __getitem__(s: Str, i: Int) -> Char {
+    effects: "element",
     cpp_name: "basic_function_25",
     code: "Obj<char> basic_function_25(Obj<std::string> s, Obj<std::int64_t> i, [[maybe_unused]] Loc loc) { return string_get(s,*i,loc); }",
 }
 extern fn __add__(a: Str, b: Str) -> Str {
+    effects: "read_fresh",
     cpp_name: "basic_function_26",
     code: "Obj<std::string> basic_function_26(Obj<std::string> a, Obj<std::string> b, [[maybe_unused]] Loc loc) { return make_obj<std::string>(*a+*b); }",
 }
 extern fn __iadd__(a: Str, b: Str) {
+    effects: "checked_resize_first",
     cpp_name: "basic_function_27",
     code: "void basic_function_27(Obj<std::string> a, Obj<std::string> b, [[maybe_unused]] Loc loc) { if(!b->empty()) { check_string_resize(a,loc); *a+=*b; } }",
 }
 extern fn push_back(s: Str, c: Char) {
+    effects: "checked_resize_first",
     cpp_name: "basic_function_28",
     code: "void basic_function_28(Obj<std::string> s, Obj<char> c, [[maybe_unused]] Loc loc) { char value=*c; check_string_resize(s,loc); s->push_back(value); }",
 }
 extern fn contains(s: Str, needle: Str) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_29",
     code: "Obj<bool> basic_function_29(Obj<std::string> s, Obj<std::string> needle, [[maybe_unused]] Loc loc) { return make_obj<bool>(s->find(*needle)!=std::string::npos); }",
 }
 extern fn contains(s: Str, needle: Char) -> Bool {
+    effects: "read_fresh",
     cpp_name: "basic_function_30",
     code: "Obj<bool> basic_function_30(Obj<std::string> s, Obj<char> needle, [[maybe_unused]] Loc loc) { return make_obj<bool>(s->find(*needle)!=std::string::npos); }",
 }
 extern fn __add__(c: Char, n: Int) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_31",
     code: "Obj<char> basic_function_31(Obj<char> c, Obj<std::int64_t> n, [[maybe_unused]] Loc loc) { return make_obj<char>(checked_char(static_cast<__int128>(*c)+*n,loc)); }",
 }
 extern fn __sub__(c: Char, n: Int) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_32",
     code: "Obj<char> basic_function_32(Obj<char> c, Obj<std::int64_t> n, [[maybe_unused]] Loc loc) { return make_obj<char>(checked_char(static_cast<__int128>(*c)-*n,loc)); }",
 }
 extern fn __sub__(a: Char, b: Char) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "basic_function_33",
     code: "Obj<std::int64_t> basic_function_33(Obj<char> a, Obj<char> b, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(static_cast<std::int64_t>(*a)-*b); }",
 }
@@ -420,34 +503,42 @@ fn abs(x: Int) -> Int {
     return if x < 0 { -x } else { copy(x) };
 }
 extern fn Int() -> Int {
+    effects: "read_fresh",
     cpp_name: "convenience_0",
     code: "Obj<std::int64_t> convenience_0([[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(0); }",
 }
 extern fn Bool() -> Bool {
+    effects: "read_fresh",
     cpp_name: "convenience_1",
     code: "Obj<bool> convenience_1([[maybe_unused]] Loc loc) { return make_obj<bool>(false); }",
 }
 extern fn Char() -> Char {
+    effects: "read_fresh",
     cpp_name: "convenience_2",
     code: "Obj<char> convenience_2([[maybe_unused]] Loc loc) { return make_obj<char>(0); }",
 }
 extern fn Str() -> Str {
+    effects: "read_fresh",
     cpp_name: "convenience_3",
     code: "Obj<std::string> convenience_3([[maybe_unused]] Loc loc) { return make_obj<std::string>(std::string{}); }",
 }
 extern fn Char(s: Str) -> Char {
+    effects: "checked_read_fresh",
     cpp_name: "convenience_4",
     code: "Obj<char> convenience_4(Obj<std::string> s, [[maybe_unused]] Loc loc) { if(s->size()!=1) fail(loc,\"Char conversion requires one ASCII character\"); return make_obj<char>((*s)[0]); }",
 }
 extern fn Str(a: Vec<Char>) -> Str {
+    effects: "read_fresh",
     cpp_name: "convenience_5",
     code: "Obj<std::string> convenience_5(Obj<RuskVec<char>> a, [[maybe_unused]] Loc loc) { std::string text; text.reserve(a->size()); for(const auto& c:*a) text.push_back(*c); return make_obj<std::string>(std::move(text)); }",
 }
 extern fn sum(a: Vec<Int>) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "convenience_6",
     code: "Obj<std::int64_t> convenience_6(Obj<IntVec> a, [[maybe_unused]] Loc loc) { std::int64_t total=0; for(const auto& x:*a) total=checked_int(static_cast<__int128>(total)+*x,loc); return make_obj<std::int64_t>(total); }",
 }
 extern fn sum(a: Vec<Int>, initial: Int) -> Int {
+    effects: "checked_read_fresh",
     cpp_name: "convenience_7",
     code: "Obj<std::int64_t> convenience_7(Obj<IntVec> a, Obj<std::int64_t> initial, [[maybe_unused]] Loc loc) { std::int64_t total=*initial; for(const auto& x:*a) total=checked_int(static_cast<__int128>(total)+*x,loc); return make_obj<std::int64_t>(total); }",
 }
@@ -467,21 +558,25 @@ fn find<T>(a: Vec<T>, value: T) -> Option<Int> {
 }
 
 extern fn __bitand__(a: Int, b: Int) -> Int {
+    effects: "read_fresh",
     cpp_name: "rusk_bitand_int",
     code: "Obj<std::int64_t> rusk_bitand_int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<std::int64_t>(*a & *b); }",
 }
 
 extern fn __bitor__(a: Int, b: Int) -> Int {
+    effects: "read_fresh",
     cpp_name: "rusk_bitor_int",
     code: "Obj<std::int64_t> rusk_bitor_int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<std::int64_t>(*a | *b); }",
 }
 
 extern fn __bitxor__(a: Int, b: Int) -> Int {
+    effects: "read_fresh",
     cpp_name: "rusk_bitxor_int",
     code: "Obj<std::int64_t> rusk_bitxor_int(Obj<std::int64_t> a, Obj<std::int64_t> b, Loc) { return make_obj<std::int64_t>(*a ^ *b); }",
 }
 
 extern fn assert(condition: Bool) {
+    effects: "checked_read_fresh",
     cpp_name: "rusk_assert",
     code: "void rusk_assert(Obj<bool> condition, Loc loc) { if (!*condition) fail(loc,\"assertion failed\"); }",
 }

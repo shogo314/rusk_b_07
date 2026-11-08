@@ -24,6 +24,8 @@ pub(crate) struct ParameterEffects {
     pub write: Effect,
     pub structural: Effect,
     pub escape: Effect,
+    /// Retained outside the call other than via its returned value.
+    pub retained: Effect,
 }
 impl ParameterEffects {
     fn unknown() -> Self {
@@ -32,6 +34,7 @@ impl ParameterEffects {
             write: Effect::Unknown,
             structural: Effect::Unknown,
             escape: Effect::Unknown,
+            retained: Effect::Unknown,
         }
     }
     fn join(&mut self, other: &Self) {
@@ -39,10 +42,12 @@ impl ParameterEffects {
         self.write.join(other.write);
         self.structural.join(other.structural);
         self.escape.join(other.escape);
+        self.retained.join(other.retained);
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Projection {
+    Element,
     Field(usize),
     VariantField { variant: usize, field: usize },
 }
@@ -163,6 +168,7 @@ pub(crate) enum SummarySource {
     Unanalyzed,
     Inferred,
     Opaque,
+    NativeContract,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Summary {
@@ -189,6 +195,12 @@ impl Summary {
             may_diverge: Effect::Unknown,
         }
     }
+    pub fn native(parameters: usize) -> Self {
+        Self {
+            source: SummarySource::NativeContract,
+            ..Self::inferred(parameters)
+        }
+    }
     fn inferred(parameters: usize) -> Self {
         Self {
             source: SummarySource::Inferred,
@@ -201,8 +213,10 @@ impl Summary {
         }
     }
     pub fn validate(&self, parameters: usize) -> Result<(), String> {
-        if self.source != SummarySource::Inferred
-            && *self != Self::unknown(parameters, self.source.clone())
+        if matches!(
+            self.source,
+            SummarySource::Opaque | SummarySource::Unanalyzed
+        ) && *self != Self::unknown(parameters, self.source.clone())
         {
             return Err("opaque or unanalyzed effects must be unknown".into());
         }
@@ -226,6 +240,9 @@ impl Summary {
         {
             return Err("effect summary loses return escape".into());
         }
+        if self.parameters.iter().any(|p| p.retained > p.escape) {
+            return Err("effect summary loses retained escape".into());
+        }
         if self.returned.clone().bounded() != self.returned {
             return Err("invalid effect summary provenance bounds".into());
         }
@@ -242,10 +259,19 @@ impl Summary {
         if !has_body && self.source == SummarySource::Inferred {
             return Err("cannot infer effects for an opaque body".into());
         }
+        if has_body && self.source == SummarySource::NativeContract {
+            return Err("native contract requires an opaque body".into());
+        }
         let project = |root: &str, path: &[Projection]| -> Result<String, String> {
             let mut ty = root.to_string();
             for projection in path {
                 ty = match (types.get(&ty), projection) {
+                    (Some(crate::hir::Type::Vector(element)), Projection::Element) => {
+                        Some(element.clone())
+                    }
+                    (Some(crate::hir::Type::Primitive), Projection::Element) if ty == "Str" => {
+                        Some("Char".into())
+                    }
                     (Some(kind), Projection::Field(index)) => kind
                         .fields()
                         .and_then(|fields| fields.get(*index))
@@ -274,8 +300,22 @@ impl Summary {
     }
     fn affect(&mut self, value: &ReturnOrigins, effect: &ParameterEffects) {
         if value.unknown {
+            let uncertain = |effect| {
+                if effect == Effect::No {
+                    Effect::No
+                } else {
+                    Effect::Unknown
+                }
+            };
+            let effect = ParameterEffects {
+                read: uncertain(effect.read),
+                write: uncertain(effect.write),
+                structural: uncertain(effect.structural),
+                escape: uncertain(effect.escape),
+                retained: uncertain(effect.retained),
+            };
             for parameter in &mut self.parameters {
-                parameter.join(&ParameterEffects::unknown());
+                parameter.join(&effect);
             }
         } else {
             for origin in &value.aliases {
@@ -405,7 +445,14 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
                     );
                     // Retention in local objects is deliberately over-approximated
                     // until their identities and reachability are modeled.
-                    escapes(summary, &value);
+                    summary.affect(
+                        &value,
+                        &ParameterEffects {
+                            escape: Effect::May,
+                            retained: Effect::May,
+                            ..ParameterEffects::default()
+                        },
+                    );
                     state.heap_unknown = true;
                 }
             }
@@ -424,7 +471,11 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
             let callee = &callees[call.function];
             let args: Vec<_> = call.args.iter().map(|v| state.get(v)).collect();
             for (actual, effect) in args.iter().zip(&callee.parameters) {
-                summary.affect(actual, effect);
+                let mut passed = effect.clone();
+                // Returning a reference only escapes the callee. The caller's
+                // uses of that result determine whether it escapes again.
+                passed.escape = effect.retained;
+                summary.affect(actual, &passed);
                 if effect.write != Effect::No || effect.structural != Effect::No {
                     state.heap_unknown = true;
                 }
@@ -452,7 +503,11 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
 }
 fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Summary {
     let Some(body) = &function.body else {
-        return Summary::unknown(function.params.len(), SummarySource::Opaque);
+        return if function.effects.source == SummarySource::NativeContract {
+            function.effects.clone()
+        } else {
+            Summary::unknown(function.params.len(), SummarySource::Opaque)
+        };
     };
     let mut summary = Summary::inferred(function.params.len());
     let initial = State {
@@ -554,7 +609,11 @@ pub(crate) fn analyze(program: &lir::Program) -> Vec<Summary> {
             if f.body.is_some() {
                 Summary::inferred(f.params.len())
             } else {
-                Summary::unknown(f.params.len(), SummarySource::Opaque)
+                if f.effects.source == SummarySource::NativeContract {
+                    f.effects.clone()
+                } else {
+                    Summary::unknown(f.params.len(), SummarySource::Opaque)
+                }
             }
         })
         .collect();
@@ -740,6 +799,51 @@ mod tests {
         assert_eq!(summaries[1].returned, ReturnOrigins::fresh());
         assert_eq!(summaries[1].parameters[0].escape, Effect::No);
         assert_eq!(summaries[1].parameters[0].write, Effect::No);
+    }
+    #[test]
+    fn returned_sharing_only_escapes_again_when_the_caller_exports_it() {
+        let summaries = analyze_checked(vec![
+            function(
+                &["Bool"],
+                "Unit",
+                Some(vec![
+                    call(3, vec![param(0, "Bool")], local(0, "Bool")),
+                    I::Return(None),
+                ]),
+            ),
+            function(
+                &["Bool"],
+                "Bool",
+                Some(vec![
+                    call(3, vec![param(0, "Bool")], local(0, "Bool")),
+                    I::Return(Some(local(0, "Bool"))),
+                ]),
+            ),
+            function(
+                &["Bool"],
+                "Bool",
+                Some(vec![
+                    call(3, vec![param(0, "Bool")], local(0, "Bool")),
+                    I::Object {
+                        result: local(1, "Bool"),
+                        expression: Rvalue::BoolCopy(local(0, "Bool")),
+                    },
+                    I::Return(Some(local(1, "Bool"))),
+                ]),
+            ),
+            function(
+                &["Bool"],
+                "Bool",
+                Some(vec![I::Return(Some(param(0, "Bool")))]),
+            ),
+        ]);
+        assert_eq!(summaries[0].parameters[0].escape, Effect::No);
+        assert_eq!(summaries[1].parameters[0].escape, Effect::May);
+        assert_eq!(summaries[2].parameters[0].escape, Effect::No);
+        assert!(summaries[2].returned.fresh);
+        for summary in summaries {
+            assert_eq!(summary.parameters[0].retained, Effect::No);
+        }
     }
     #[test]
     fn fields_and_contained_references_survive_function_calls() {
@@ -955,6 +1059,7 @@ mod tests {
         assert_eq!(summaries[0].parameters[0].escape, Effect::No);
         assert_eq!(summaries[2].parameters[0].write, Effect::May);
         assert_eq!(summaries[2].parameters[1].escape, Effect::May);
+        assert_eq!(summaries[2].parameters[1].retained, Effect::May);
     }
     #[test]
     fn opaque_names_are_not_trusted_and_unknown_global_writes_invalidate_fields() {

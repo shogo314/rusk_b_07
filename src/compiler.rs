@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 mod callables;
 mod containers;
 mod cpp;
+mod effects;
 mod enums;
 mod expressions;
 mod flow;
@@ -65,6 +66,7 @@ pub struct Compiler {
     generic_instances: BTreeMap<(usize, Vec<String>), usize>,
     generic_calls: BTreeMap<usize, Span>,
     functions: Vec<Function>,
+    native_contracts: BTreeMap<usize, crate::effects::Summary>,
     symbols: BTreeMap<String, String>,
     scopes: Vec<BTreeMap<String, Variable>>,
     body: Body,
@@ -202,7 +204,7 @@ impl Compiler {
                     | Stmt::UserFunction(n, _, params, result, _) => {
                         let (cpp, code, body) = match s {
                             Stmt::Function(_, _, _, p) => {
-                                validate(n, p, &["cpp_name", "code"])?;
+                                validate(n, p, &["cpp_name", "code", "effects"])?;
                                 (property(n, p, "cpp_name")?, property(n, p, "code")?, None)
                             }
                             Stmt::UserFunction(_, _, params, _, body) => (
@@ -239,6 +241,12 @@ impl Compiler {
                                 "duplicate function; previous definition at {}:{}:{}",
                                 old.name.span.file, old.name.span.line, old.name.span.column
                             )));
+                        }
+                        if let Stmt::Function(_, _, _, properties) = s
+                            && let Some(effects) =
+                                self.declared_native_effects(n, &params, &result, properties)?
+                        {
+                            self.native_contracts.insert(self.functions.len(), effects);
                         }
                         self.functions.push(Function {
                             name: n.clone(),
@@ -331,7 +339,11 @@ impl Compiler {
                     params: f.params.clone(),
                     result: f.result.clone(),
                     body: f.checked.clone(),
-                    effects: crate::effects::Summary::unanalyzed(f.params.len()),
+                    effects: self
+                        .native_contracts
+                        .get(&id)
+                        .cloned()
+                        .unwrap_or_else(|| crate::effects::Summary::unanalyzed(f.params.len())),
                 })
                 .collect(),
             main: std::mem::take(&mut self.body),
@@ -486,12 +498,22 @@ impl Compiler {
                 {
                     continue;
                 }
+                let parameters = params
+                    .into_iter()
+                    .map(|(_, ty)| ty.text)
+                    .collect::<Vec<_>>();
+                let result = result.map_or("Unit".into(), |ty| ty.text);
+                if let Some(effects) =
+                    self.declared_native_effects(&name, &parameters, &result, &properties)?
+                {
+                    self.native_contracts.insert(self.functions.len(), effects);
+                }
                 self.functions.push(Function {
                     cpp: property(&name, &properties, "cpp_name")?,
                     code: property(&name, &properties, "code")?,
                     name,
-                    params: params.into_iter().map(|(_, ty)| ty.text).collect(),
-                    result: result.map_or("Unit".into(), |ty| ty.text),
+                    params: parameters,
+                    result,
                     body: None,
                     checked: None,
                 });

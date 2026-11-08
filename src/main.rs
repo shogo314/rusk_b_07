@@ -7,6 +7,7 @@ mod hir_flow;
 mod hir_validate;
 mod lir;
 mod lir_cleanup;
+mod native_effects;
 mod rusk_grammar;
 mod source;
 #[allow(warnings)]
