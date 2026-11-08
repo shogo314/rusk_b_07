@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/associative_array
+in q:Int;
+let values:=Dict::<Int,Int>();
+for i in 0..q {
+    in kind,key:Int;
+    if kind==0 {in value:Int;values.set(key,value);}
+    else {wt values.get(key)??0;}
+}

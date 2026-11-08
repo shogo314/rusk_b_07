@@ -1,0 +1,10 @@
+// B - uNrEaDaBlE sTrInG
+// https://atcoder.jp/contests/abc192/tasks/abc192_b
+// 文字の検査
+in s:Str;
+let valid:=true;
+for i in 0..s.len() {
+    if i%2==0 { if s[i]<'a' || 'z'<s[i] { valid=false; } }
+    else { if s[i]<'A' || 'Z'<s[i] { valid=false; } }
+}
+wt valid;

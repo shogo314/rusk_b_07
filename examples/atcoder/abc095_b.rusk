@@ -1,0 +1,7 @@
+// B - Bitter Alchemy
+// https://atcoder.jp/contests/abc095/tasks/abc095_b
+// 貪欲法
+in n,x:Int;
+in costs(n):Vec<Int>;
+costs.sort();
+wt n+(x-costs.sum())/costs[0];

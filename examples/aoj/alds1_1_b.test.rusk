@@ -1,0 +1,7 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_B
+// ALDS1_1_B - Greatest Common Divisor
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_B
+// ユークリッドの互除法
+in x,y:Int;
+while y { let remainder:=x%y; x:=y; y:=remainder; }
+wt x;

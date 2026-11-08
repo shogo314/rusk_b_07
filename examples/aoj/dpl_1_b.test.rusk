@@ -1,0 +1,15 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_B
+// DPL_1_B - 0-1 Knapsack Problem
+// https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_B
+// 重さに関するDP
+in n,capacity:Int;
+let best:=[0;capacity+1];
+for item in 0..n {
+    in value,weight:Int;
+    let remaining = capacity;
+    while remaining>=weight {
+        best[remaining]=max(best[remaining],best[remaining-weight]+value);
+        remaining-=1;
+    }
+}
+wt best[capacity];

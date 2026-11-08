@@ -1,0 +1,10 @@
+// B - Blocks on Grid
+// https://atcoder.jp/contests/abc186/tasks/abc186_b
+in h,w:Int;
+let total:=0;
+let lowest:=100;
+for r in 0..h {
+    in row(w):Vec<Int>;
+    for x in row { total+=x; lowest=min(lowest,x); }
+}
+wt total-lowest*h*w;

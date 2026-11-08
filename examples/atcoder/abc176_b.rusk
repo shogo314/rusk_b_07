@@ -1,0 +1,6 @@
+// B - Multiple of 9
+// https://atcoder.jp/contests/abc176/tasks/abc176_b
+in s:Str;
+let digits:=0;
+for i in 0..s.len() { digits+=s[i]-'0'; }
+wt digits%9==0;

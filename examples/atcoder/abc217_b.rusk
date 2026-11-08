@@ -1,0 +1,7 @@
+// B - AtCoder Quiz
+// https://atcoder.jp/contests/abc217/tasks/abc217_b
+// 配列の検索
+in given(3):Vec<Str>;
+for contest in ["ABC","ARC","AGC","AHC"] {
+    if !given.contains(contest) { wt contest; }
+}

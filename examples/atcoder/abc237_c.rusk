@@ -1,0 +1,14 @@
+// C - kasaka
+// https://atcoder.jp/contests/abc237/tasks/abc237_c
+in s:Str;
+let left:=0;
+let right:=s.len()-1;
+while left<=right && s[left]=='a' { left+=1; }
+while left<=right && s[right]=='a' { right-=1; }
+let possible:=left<=s.len()-1-right;
+if left==s.len() { possible=true; }
+while left<right {
+    if s[left]!=s[right] { possible=false; }
+    left+=1; right-=1;
+}
+wt possible;

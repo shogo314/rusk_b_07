@@ -1,0 +1,1618 @@
+{
+  "abc050_b": {
+    "url": "https://atcoder.jp/contests/abc050/tasks/abc050_b",
+    "samples": [
+      {
+        "input": "3\n2 1 4\n2\n1 1\n2 3\n",
+        "output": "6\n9\n"
+      },
+      {
+        "input": "5\n7 2 3 8 5\n3\n4 2\n1 7\n4 13\n",
+        "output": "19\n25\n30\n"
+      }
+    ]
+  },
+  "abc079_b": {
+    "url": "https://atcoder.jp/contests/abc079/tasks/abc079_b",
+    "samples": [
+      {
+        "input": "5\n",
+        "output": "11\n"
+      },
+      {
+        "input": "86\n",
+        "output": "939587134549734843\n"
+      }
+    ]
+  },
+  "abc080_b": {
+    "url": "https://atcoder.jp/contests/abc080/tasks/abc080_b",
+    "samples": [
+      {
+        "input": "12\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "57\n",
+        "output": "No\n"
+      },
+      {
+        "input": "148\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc081_a": {
+    "url": "https://atcoder.jp/contests/abc081/tasks/abc081_a",
+    "samples": [
+      {
+        "input": "101\n",
+        "output": "2\n"
+      },
+      {
+        "input": "000\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc081_b": {
+    "url": "https://atcoder.jp/contests/abc081/tasks/abc081_b",
+    "samples": [
+      {
+        "input": "3\n8 12 40\n",
+        "output": "2\n"
+      },
+      {
+        "input": "4\n5 6 8 10\n",
+        "output": "0\n"
+      },
+      {
+        "input": "6\n382253568 723152896 37802240 379425024 404894720 471526144\n",
+        "output": "8\n"
+      }
+    ]
+  },
+  "abc083_b": {
+    "url": "https://atcoder.jp/contests/abc083/tasks/abc083_b",
+    "samples": [
+      {
+        "input": "20 2 5\n",
+        "output": "84\n"
+      },
+      {
+        "input": "10 1 2\n",
+        "output": "13\n"
+      },
+      {
+        "input": "100 4 16\n",
+        "output": "4554\n"
+      }
+    ]
+  },
+  "abc084_b": {
+    "url": "https://atcoder.jp/contests/abc084/tasks/abc084_b",
+    "samples": [
+      {
+        "input": "3 4\n269-6650\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "1 1\n---\n",
+        "output": "No\n"
+      },
+      {
+        "input": "1 2\n7444\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc085_a": {
+    "url": "https://atcoder.jp/contests/abc085/tasks/abc085_a",
+    "samples": [
+      {
+        "input": "2017/01/07\n",
+        "output": "2018/01/07\n"
+      },
+      {
+        "input": "2017/01/31\n",
+        "output": "2018/01/31\n"
+      }
+    ]
+  },
+  "abc085_b": {
+    "url": "https://atcoder.jp/contests/abc085/tasks/abc085_b",
+    "samples": [
+      {
+        "input": "4\n10\n8\n8\n6\n",
+        "output": "3\n"
+      },
+      {
+        "input": "3\n15\n15\n15\n",
+        "output": "1\n"
+      },
+      {
+        "input": "7\n50\n30\n50\n100\n50\n80\n30\n",
+        "output": "4\n"
+      }
+    ]
+  },
+  "abc086_a": {
+    "url": "https://atcoder.jp/contests/abc086/tasks/abc086_a",
+    "samples": [
+      {
+        "input": "3 4\n",
+        "output": "Even\n"
+      },
+      {
+        "input": "1 21\n",
+        "output": "Odd\n"
+      }
+    ]
+  },
+  "abc086_b": {
+    "url": "https://atcoder.jp/contests/abc086/tasks/abc086_b",
+    "samples": [
+      {
+        "input": "1 21\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "100 100\n",
+        "output": "No\n"
+      },
+      {
+        "input": "12 10\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc087_a": {
+    "url": "https://atcoder.jp/contests/abc087/tasks/abc087_a",
+    "samples": [
+      {
+        "input": "1234\n150\n100\n",
+        "output": "84\n"
+      },
+      {
+        "input": "1000\n108\n108\n",
+        "output": "28\n"
+      },
+      {
+        "input": "579\n123\n456\n",
+        "output": "0\n"
+      },
+      {
+        "input": "7477\n549\n593\n",
+        "output": "405\n"
+      }
+    ]
+  },
+  "abc087_b": {
+    "url": "https://atcoder.jp/contests/abc087/tasks/abc087_b",
+    "samples": [
+      {
+        "input": "2\n2\n2\n100\n",
+        "output": "2\n"
+      },
+      {
+        "input": "5\n1\n0\n150\n",
+        "output": "0\n"
+      },
+      {
+        "input": "30\n40\n50\n6000\n",
+        "output": "213\n"
+      }
+    ]
+  },
+  "abc088_a": {
+    "url": "https://atcoder.jp/contests/abc088/tasks/abc088_a",
+    "samples": [
+      {
+        "input": "2018\n218\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "2763\n0\n",
+        "output": "No\n"
+      },
+      {
+        "input": "37\n514\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc088_b": {
+    "url": "https://atcoder.jp/contests/abc088/tasks/abc088_b",
+    "samples": [
+      {
+        "input": "2\n3 1\n",
+        "output": "2\n"
+      },
+      {
+        "input": "3\n2 7 4\n",
+        "output": "5\n"
+      },
+      {
+        "input": "4\n20 18 2 18\n",
+        "output": "18\n"
+      }
+    ]
+  },
+  "abc089_b": {
+    "url": "https://atcoder.jp/contests/abc089/tasks/abc089_b",
+    "samples": [
+      {
+        "input": "6\nG W Y P Y W\n",
+        "output": "Four\n"
+      },
+      {
+        "input": "9\nG W W G P W P G G\n",
+        "output": "Three\n"
+      },
+      {
+        "input": "8\nP Y W G Y W Y Y\n",
+        "output": "Four\n"
+      }
+    ]
+  },
+  "abc090_b": {
+    "url": "https://atcoder.jp/contests/abc090/tasks/abc090_b",
+    "samples": [
+      {
+        "input": "11009 11332\n",
+        "output": "4\n"
+      },
+      {
+        "input": "31415 92653\n",
+        "output": "612\n"
+      }
+    ]
+  },
+  "abc092_b": {
+    "url": "https://atcoder.jp/contests/abc092/tasks/abc092_b",
+    "samples": [
+      {
+        "input": "3\n7 1\n2\n5\n10\n",
+        "output": "8\n"
+      },
+      {
+        "input": "2\n8 20\n1\n10\n",
+        "output": "29\n"
+      },
+      {
+        "input": "5\n30 44\n26\n18\n81\n18\n6\n",
+        "output": "56\n"
+      }
+    ]
+  },
+  "abc094_b": {
+    "url": "https://atcoder.jp/contests/abc094/tasks/abc094_b",
+    "samples": [
+      {
+        "input": "5 3 3\n1 2 4\n",
+        "output": "1\n"
+      },
+      {
+        "input": "7 3 2\n4 5 6\n",
+        "output": "0\n"
+      },
+      {
+        "input": "10 7 5\n1 2 3 4 6 8 9\n",
+        "output": "3\n"
+      }
+    ]
+  },
+  "abc095_a": {
+    "url": "https://atcoder.jp/contests/abc095/tasks/abc095_a",
+    "samples": [
+      {
+        "input": "oxo\n",
+        "output": "900\n"
+      },
+      {
+        "input": "ooo\n",
+        "output": "1000\n"
+      },
+      {
+        "input": "xxx\n",
+        "output": "700\n"
+      }
+    ]
+  },
+  "abc095_b": {
+    "url": "https://atcoder.jp/contests/abc095/tasks/abc095_b",
+    "samples": [
+      {
+        "input": "3 1000\n120\n100\n140\n",
+        "output": "9\n"
+      },
+      {
+        "input": "4 360\n90\n90\n90\n90\n",
+        "output": "4\n"
+      },
+      {
+        "input": "5 3000\n150\n130\n150\n130\n110\n",
+        "output": "26\n"
+      }
+    ]
+  },
+  "abc096_b": {
+    "url": "https://atcoder.jp/contests/abc096/tasks/abc096_b",
+    "samples": [
+      {
+        "input": "5 3 11\n1\n",
+        "output": "30\n"
+      },
+      {
+        "input": "3 3 4\n2\n",
+        "output": "22\n"
+      }
+    ]
+  },
+  "abc097_b": {
+    "url": "https://atcoder.jp/contests/abc097/tasks/abc097_b",
+    "samples": [
+      {
+        "input": "10\n",
+        "output": "9\n"
+      },
+      {
+        "input": "1\n",
+        "output": "1\n"
+      },
+      {
+        "input": "999\n",
+        "output": "961\n"
+      }
+    ]
+  },
+  "abc098_b": {
+    "url": "https://atcoder.jp/contests/abc098/tasks/abc098_b",
+    "samples": [
+      {
+        "input": "6\naabbca\n",
+        "output": "2\n"
+      },
+      {
+        "input": "10\naaaaaaaaaa\n",
+        "output": "1\n"
+      },
+      {
+        "input": "45\ntgxgdqkyjzhyputjjtllptdfxocrylqfqjynmfbfucbir\n",
+        "output": "9\n"
+      }
+    ]
+  },
+  "abc099_b": {
+    "url": "https://atcoder.jp/contests/abc099/tasks/abc099_b",
+    "samples": [
+      {
+        "input": "8 13\n",
+        "output": "2\n"
+      },
+      {
+        "input": "54 65\n",
+        "output": "1\n"
+      }
+    ]
+  },
+  "abc100_b": {
+    "url": "https://atcoder.jp/contests/abc100/tasks/abc100_b",
+    "samples": [
+      {
+        "input": "0 5\n",
+        "output": "5\n"
+      },
+      {
+        "input": "1 11\n",
+        "output": "1100\n"
+      },
+      {
+        "input": "2 85\n",
+        "output": "850000\n"
+      }
+    ]
+  },
+  "abc111_b": {
+    "url": "https://atcoder.jp/contests/abc111/tasks/abc111_b",
+    "samples": [
+      {
+        "input": "111\n",
+        "output": "111\n"
+      },
+      {
+        "input": "112\n",
+        "output": "222\n"
+      },
+      {
+        "input": "750\n",
+        "output": "777\n"
+      }
+    ]
+  },
+  "abc125_a": {
+    "url": "https://atcoder.jp/contests/abc125/tasks/abc125_a",
+    "samples": [
+      {
+        "input": "3 5 7\n",
+        "output": "10\n"
+      },
+      {
+        "input": "3 2 9\n",
+        "output": "6\n"
+      },
+      {
+        "input": "20 20 19\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc134_c": {
+    "url": "https://atcoder.jp/contests/abc134/tasks/abc134_c",
+    "samples": [
+      {
+        "input": "3\n1\n4\n3\n",
+        "output": "4\n3\n4\n"
+      },
+      {
+        "input": "2\n5\n5\n",
+        "output": "5\n5\n"
+      }
+    ]
+  },
+  "abc136_b": {
+    "url": "https://atcoder.jp/contests/abc136/tasks/abc136_b",
+    "samples": [
+      {
+        "input": "11\n",
+        "output": "9\n"
+      },
+      {
+        "input": "136\n",
+        "output": "46\n"
+      },
+      {
+        "input": "100000\n",
+        "output": "90909\n"
+      }
+    ]
+  },
+  "abc143_d": {
+    "url": "https://atcoder.jp/contests/abc143/tasks/abc143_d",
+    "samples": [
+      {
+        "input": "4\n3 4 2 1\n",
+        "output": "1\n"
+      },
+      {
+        "input": "3\n1 1000 1\n",
+        "output": "0\n"
+      },
+      {
+        "input": "7\n218 786 704 233 645 728 389\n",
+        "output": "23\n"
+      }
+    ]
+  },
+  "abc146_c": {
+    "url": "https://atcoder.jp/contests/abc146/tasks/abc146_c",
+    "samples": [
+      {
+        "input": "10 7 100\n",
+        "output": "9\n"
+      },
+      {
+        "input": "2 1 100000000000\n",
+        "output": "1000000000\n"
+      },
+      {
+        "input": "1000000000 1000000000 100\n",
+        "output": "0\n"
+      },
+      {
+        "input": "1234 56789 314159265\n",
+        "output": "254309\n"
+      }
+    ]
+  },
+  "abc163_b": {
+    "url": "https://atcoder.jp/contests/abc163/tasks/abc163_b",
+    "samples": [
+      {
+        "input": "41 2\n5 6\n",
+        "output": "30\n"
+      },
+      {
+        "input": "10 2\n5 6\n",
+        "output": "-1\n"
+      },
+      {
+        "input": "11 2\n5 6\n",
+        "output": "0\n"
+      },
+      {
+        "input": "314 15\n9 26 5 35 8 9 79 3 23 8 46 2 6 43 3\n",
+        "output": "9\n"
+      }
+    ]
+  },
+  "abc163_c": {
+    "url": "https://atcoder.jp/contests/abc163/tasks/abc163_c",
+    "samples": [
+      {
+        "input": "5\n1 1 2 2\n",
+        "output": "2\n2\n0\n0\n0\n"
+      },
+      {
+        "input": "10\n1 1 1 1 1 1 1 1 1\n",
+        "output": "9\n0\n0\n0\n0\n0\n0\n0\n0\n0\n"
+      },
+      {
+        "input": "7\n1 2 3 4 5 6\n",
+        "output": "1\n1\n1\n1\n1\n1\n0\n"
+      }
+    ]
+  },
+  "abc174_e": {
+    "url": "https://atcoder.jp/contests/abc174/tasks/abc174_e",
+    "samples": [
+      {
+        "input": "2 3\n7 9\n",
+        "output": "4\n"
+      },
+      {
+        "input": "3 0\n3 4 5\n",
+        "output": "5\n"
+      },
+      {
+        "input": "10 10\n158260522 877914575 602436426 24979445 861648772 623690081 433933447 476190629 262703497 211047202\n",
+        "output": "292638192\n"
+      }
+    ]
+  },
+  "abc175_b": {
+    "url": "https://atcoder.jp/contests/abc175/tasks/abc175_b",
+    "samples": [
+      {
+        "input": "5\n4 4 9 7 5\n",
+        "output": "5\n"
+      },
+      {
+        "input": "6\n4 5 4 3 3 5\n",
+        "output": "8\n"
+      },
+      {
+        "input": "10\n9 4 6 1 9 6 10 6 6 8\n",
+        "output": "39\n"
+      },
+      {
+        "input": "2\n1 1\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc176_b": {
+    "url": "https://atcoder.jp/contests/abc176/tasks/abc176_b",
+    "samples": [
+      {
+        "input": "123456789\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "0\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "31415926535897932384626433832795028841971693993751058209749445923078164062862089986280\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc178_e": {
+    "url": "https://atcoder.jp/contests/abc178/tasks/abc178_e",
+    "samples": [
+      {
+        "input": "3\n1 1\n2 4\n3 2\n",
+        "output": "4\n"
+      },
+      {
+        "input": "2\n1 1\n1 1\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc179_b": {
+    "url": "https://atcoder.jp/contests/abc179/tasks/abc179_b",
+    "samples": [
+      {
+        "input": "5\n1 2\n6 6\n4 4\n3 3\n3 2\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "5\n1 1\n2 2\n3 4\n5 5\n6 6\n",
+        "output": "No\n"
+      },
+      {
+        "input": "6\n1 1\n2 2\n3 3\n4 4\n5 5\n6 6\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc179_c": {
+    "url": "https://atcoder.jp/contests/abc179/tasks/abc179_c",
+    "samples": [
+      {
+        "input": "3\n",
+        "output": "3\n"
+      },
+      {
+        "input": "100\n",
+        "output": "473\n"
+      },
+      {
+        "input": "1000000\n",
+        "output": "13969985\n"
+      }
+    ]
+  },
+  "abc180_c": {
+    "url": "https://atcoder.jp/contests/abc180/tasks/abc180_c",
+    "samples": [
+      {
+        "input": "6\n",
+        "output": "1\n2\n3\n6\n"
+      },
+      {
+        "input": "720\n",
+        "output": "1\n2\n3\n4\n5\n6\n8\n9\n10\n12\n15\n16\n18\n20\n24\n30\n36\n40\n45\n48\n60\n72\n80\n90\n120\n144\n180\n240\n360\n720\n"
+      },
+      {
+        "input": "1000000007\n",
+        "output": "1\n1000000007\n"
+      }
+    ]
+  },
+  "abc181_c": {
+    "url": "https://atcoder.jp/contests/abc181/tasks/abc181_c",
+    "samples": [
+      {
+        "input": "4\n0 1\n0 2\n0 3\n1 1\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "14\n5 5\n0 1\n2 5\n8 0\n2 1\n0 0\n3 6\n8 6\n5 9\n7 9\n3 4\n9 2\n9 8\n7 2\n",
+        "output": "No\n"
+      },
+      {
+        "input": "9\n8 2\n2 3\n1 3\n3 7\n1 0\n8 8\n5 6\n9 7\n0 1\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc184_b": {
+    "url": "https://atcoder.jp/contests/abc184/tasks/abc184_b",
+    "samples": [
+      {
+        "input": "3 0\nxox\n",
+        "output": "0\n"
+      },
+      {
+        "input": "20 199999\noooooooooxoooooooooo\n",
+        "output": "200017\n"
+      },
+      {
+        "input": "20 10\nxxxxxxxxxxxxxxxxxxxx\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc186_b": {
+    "url": "https://atcoder.jp/contests/abc186/tasks/abc186_b",
+    "samples": [
+      {
+        "input": "2 3\n2 2 3\n3 2 2\n",
+        "output": "2\n"
+      },
+      {
+        "input": "3 3\n99 99 99\n99 0 99\n99 99 99\n",
+        "output": "792\n"
+      },
+      {
+        "input": "3 2\n4 4\n4 4\n4 4\n",
+        "output": "0\n"
+      }
+    ]
+  },
+  "abc186_c": {
+    "url": "https://atcoder.jp/contests/abc186/tasks/abc186_c",
+    "samples": [
+      {
+        "input": "20\n",
+        "output": "17\n"
+      },
+      {
+        "input": "100000\n",
+        "output": "30555\n"
+      }
+    ]
+  },
+  "abc187_b": {
+    "url": "https://atcoder.jp/contests/abc187/tasks/abc187_b",
+    "samples": [
+      {
+        "input": "3\n0 0\n1 2\n2 1\n",
+        "output": "2\n"
+      },
+      {
+        "input": "1\n-691 273\n",
+        "output": "0\n"
+      },
+      {
+        "input": "10\n-31 -35\n8 -36\n22 64\n5 73\n-14 8\n18 -58\n-41 -85\n1 -88\n-21 -85\n-11 82\n",
+        "output": "11\n"
+      }
+    ]
+  },
+  "abc188_b": {
+    "url": "https://atcoder.jp/contests/abc188/tasks/abc188_b",
+    "samples": [
+      {
+        "input": "2\n-3 6\n4 2\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "2\n4 5\n-1 -3\n",
+        "output": "No\n"
+      },
+      {
+        "input": "3\n1 3 5\n3 -6 3\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc190_b": {
+    "url": "https://atcoder.jp/contests/abc190/tasks/abc190_b",
+    "samples": [
+      {
+        "input": "4 9 9\n5 5\n15 5\n5 15\n15 15\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "3 691 273\n691 997\n593 273\n691 273\n",
+        "output": "No\n"
+      },
+      {
+        "input": "7 100 100\n10 11\n12 67\n192 79\n154 197\n142 158\n20 25\n17 108\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc191_b": {
+    "url": "https://atcoder.jp/contests/abc191/tasks/abc191_b",
+    "samples": [
+      {
+        "input": "5 5\n3 5 6 5 4\n",
+        "output": "3 6 4\n"
+      },
+      {
+        "input": "3 3\n3 3 3\n",
+        "output": "\n"
+      }
+    ]
+  },
+  "abc192_b": {
+    "url": "https://atcoder.jp/contests/abc192/tasks/abc192_b",
+    "samples": [
+      {
+        "input": "dIfFiCuLt\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "eASY\n",
+        "output": "No\n"
+      },
+      {
+        "input": "a\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc193_b": {
+    "url": "https://atcoder.jp/contests/abc193/tasks/abc193_b",
+    "samples": [
+      {
+        "input": "3\n3 9 5\n4 8 5\n5 7 5\n",
+        "output": "8\n"
+      },
+      {
+        "input": "3\n5 9 5\n6 8 5\n7 7 5\n",
+        "output": "-1\n"
+      },
+      {
+        "input": "10\n158260522 877914575 602436426\n24979445 861648772 623690081\n433933447 476190629 262703497\n211047202 971407775 628894325\n731963982 822804784 450968417\n430302156 982631932 161735902\n880895728 923078537 707723857\n189330739 910286918 802329211\n404539679 303238506 317063340\n492686568 773361868 125660016\n",
+        "output": "861648772\n"
+      }
+    ]
+  },
+  "abc194_b": {
+    "url": "https://atcoder.jp/contests/abc194/tasks/abc194_b",
+    "samples": [
+      {
+        "input": "3\n8 5\n4 4\n7 9\n",
+        "output": "5\n"
+      },
+      {
+        "input": "3\n11 7\n3 2\n6 7\n",
+        "output": "5\n"
+      }
+    ]
+  },
+  "abc194_c": {
+    "url": "https://atcoder.jp/contests/abc194/tasks/abc194_c",
+    "samples": [
+      {
+        "input": "3\n2 8 4\n",
+        "output": "56\n"
+      },
+      {
+        "input": "5\n-5 8 9 -4 -3\n",
+        "output": "950\n"
+      }
+    ]
+  },
+  "abc196_c": {
+    "url": "https://atcoder.jp/contests/abc196/tasks/abc196_c",
+    "samples": [
+      {
+        "input": "33\n",
+        "output": "3\n"
+      },
+      {
+        "input": "1333\n",
+        "output": "13\n"
+      },
+      {
+        "input": "10000000\n",
+        "output": "999\n"
+      }
+    ]
+  },
+  "abc199_b": {
+    "url": "https://atcoder.jp/contests/abc199/tasks/abc199_b",
+    "samples": [
+      {
+        "input": "2\n3 2\n7 5\n",
+        "output": "3\n"
+      },
+      {
+        "input": "3\n1 5 3\n10 7 3\n",
+        "output": "0\n"
+      },
+      {
+        "input": "3\n3 2 5\n6 9 8\n",
+        "output": "2\n"
+      }
+    ]
+  },
+  "abc200_b": {
+    "url": "https://atcoder.jp/contests/abc200/tasks/abc200_b",
+    "samples": [
+      {
+        "input": "2021 4\n",
+        "output": "50531\n"
+      },
+      {
+        "input": "40000 2\n",
+        "output": "1\n"
+      },
+      {
+        "input": "8691 20\n",
+        "output": "84875488281\n"
+      }
+    ]
+  },
+  "abc202_b": {
+    "url": "https://atcoder.jp/contests/abc202/tasks/abc202_b",
+    "samples": [
+      {
+        "input": "0601889\n",
+        "output": "6881090\n"
+      },
+      {
+        "input": "86910\n",
+        "output": "01698\n"
+      },
+      {
+        "input": "01010\n",
+        "output": "01010\n"
+      }
+    ]
+  },
+  "abc205_b": {
+    "url": "https://atcoder.jp/contests/abc205/tasks/abc205_b",
+    "samples": [
+      {
+        "input": "5\n3 1 2 4 5\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "6\n3 1 4 1 5 2\n",
+        "output": "No\n"
+      },
+      {
+        "input": "3\n1 2 3\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "1\n1\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc206_b": {
+    "url": "https://atcoder.jp/contests/abc206/tasks/abc206_b",
+    "samples": [
+      {
+        "input": "12\n",
+        "output": "5\n"
+      },
+      {
+        "input": "100128\n",
+        "output": "447\n"
+      }
+    ]
+  },
+  "abc206_c": {
+    "url": "https://atcoder.jp/contests/abc206/tasks/abc206_c",
+    "samples": [
+      {
+        "input": "3\n1 7 1\n",
+        "output": "2\n"
+      },
+      {
+        "input": "10\n1 10 100 1000 10000 100000 1000000 10000000 100000000 1000000000\n",
+        "output": "45\n"
+      },
+      {
+        "input": "20\n7 8 1 1 4 9 9 6 8 2 4 1 1 9 5 5 5 3 6 4\n",
+        "output": "173\n"
+      }
+    ]
+  },
+  "abc208_b": {
+    "url": "https://atcoder.jp/contests/abc208/tasks/abc208_b",
+    "samples": [
+      {
+        "input": "9\n",
+        "output": "3\n"
+      },
+      {
+        "input": "119\n",
+        "output": "10\n"
+      },
+      {
+        "input": "10000000\n",
+        "output": "24\n"
+      }
+    ]
+  },
+  "abc211_b": {
+    "url": "https://atcoder.jp/contests/abc211/tasks/abc211_b",
+    "samples": [
+      {
+        "input": "3B\nHR\n2B\nH\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "2B\n3B\nHR\n3B\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc213_b": {
+    "url": "https://atcoder.jp/contests/abc213/tasks/abc213_b",
+    "samples": [
+      {
+        "input": "6\n1 123 12345 12 1234 123456\n",
+        "output": "3\n"
+      },
+      {
+        "input": "5\n3 1 4 15 9\n",
+        "output": "5\n"
+      }
+    ]
+  },
+  "abc214_b": {
+    "url": "https://atcoder.jp/contests/abc214/tasks/abc214_b",
+    "samples": [
+      {
+        "input": "1 0\n",
+        "output": "4\n"
+      },
+      {
+        "input": "2 5\n",
+        "output": "10\n"
+      },
+      {
+        "input": "10 10\n",
+        "output": "213\n"
+      },
+      {
+        "input": "30 100\n",
+        "output": "2471\n"
+      }
+    ]
+  },
+  "abc215_b": {
+    "url": "https://atcoder.jp/contests/abc215/tasks/abc215_b",
+    "samples": [
+      {
+        "input": "6\n",
+        "output": "2\n"
+      },
+      {
+        "input": "1\n",
+        "output": "0\n"
+      },
+      {
+        "input": "1000000000000000000\n",
+        "output": "59\n"
+      }
+    ]
+  },
+  "abc217_b": {
+    "url": "https://atcoder.jp/contests/abc217/tasks/abc217_b",
+    "samples": [
+      {
+        "input": "ARC\nAGC\nAHC\n",
+        "output": "ABC\n"
+      },
+      {
+        "input": "AGC\nABC\nARC\n",
+        "output": "AHC\n"
+      }
+    ]
+  },
+  "abc221_b": {
+    "url": "https://atcoder.jp/contests/abc221/tasks/abc221_b",
+    "samples": [
+      {
+        "input": "abc\nacb\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "aabb\nbbaa\n",
+        "output": "No\n"
+      },
+      {
+        "input": "abcde\nabcde\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc226_b": {
+    "url": "https://atcoder.jp/contests/abc226/tasks/abc226_b",
+    "samples": [
+      {
+        "input": "4\n2 1 2\n2 1 1\n2 2 1\n2 1 2\n",
+        "output": "3\n"
+      },
+      {
+        "input": "5\n1 1\n1 1\n1 2\n2 1 1\n3 1 1 1\n",
+        "output": "4\n"
+      },
+      {
+        "input": "1\n1 1\n",
+        "output": "1\n"
+      }
+    ]
+  },
+  "abc227_b": {
+    "url": "https://atcoder.jp/contests/abc227/tasks/abc227_b",
+    "samples": [
+      {
+        "input": "3\n10 20 39\n",
+        "output": "1\n"
+      },
+      {
+        "input": "5\n666 777 888 777 666\n",
+        "output": "3\n"
+      }
+    ]
+  },
+  "abc228_b": {
+    "url": "https://atcoder.jp/contests/abc228/tasks/abc228_b",
+    "samples": [
+      {
+        "input": "4 2\n3 1 1 2\n",
+        "output": "3\n"
+      },
+      {
+        "input": "20 12\n7 11 10 1 7 20 14 2 17 3 2 5 19 20 8 14 18 2 10 10\n",
+        "output": "7\n"
+      }
+    ]
+  },
+  "abc229_b": {
+    "url": "https://atcoder.jp/contests/abc229/tasks/abc229_b",
+    "samples": [
+      {
+        "input": "229 390\n",
+        "output": "Hard\n"
+      },
+      {
+        "input": "123456789 9876543210\n",
+        "output": "Easy\n"
+      }
+    ]
+  },
+  "abc232_b": {
+    "url": "https://atcoder.jp/contests/abc232/tasks/abc232_b",
+    "samples": [
+      {
+        "input": "abc\nijk\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "z\na\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "ppq\nqqp\n",
+        "output": "No\n"
+      },
+      {
+        "input": "atcoder\natcoder\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc233_b": {
+    "url": "https://atcoder.jp/contests/abc233/tasks/abc233_b",
+    "samples": [
+      {
+        "input": "3 7\nabcdefgh\n",
+        "output": "abgfedch\n"
+      },
+      {
+        "input": "1 7\nreviver\n",
+        "output": "reviver\n"
+      },
+      {
+        "input": "4 13\nmerrychristmas\n",
+        "output": "meramtsirhcyrs\n"
+      }
+    ]
+  },
+  "abc235_b": {
+    "url": "https://atcoder.jp/contests/abc235/tasks/abc235_b",
+    "samples": [
+      {
+        "input": "5\n1 5 10 4 2\n",
+        "output": "10\n"
+      },
+      {
+        "input": "3\n100 1000 100000\n",
+        "output": "100000\n"
+      },
+      {
+        "input": "4\n27 1828 1828 9242\n",
+        "output": "1828\n"
+      }
+    ]
+  },
+  "abc236_b": {
+    "url": "https://atcoder.jp/contests/abc236/tasks/abc236_b",
+    "samples": [
+      {
+        "input": "3\n1 3 2 3 3 2 2 1 1 1 2\n",
+        "output": "3\n"
+      },
+      {
+        "input": "1\n1 1 1\n",
+        "output": "1\n"
+      },
+      {
+        "input": "4\n3 2 1 1 2 4 4 4 4 3 1 3 2 1 3\n",
+        "output": "2\n"
+      }
+    ]
+  },
+  "abc237_c": {
+    "url": "https://atcoder.jp/contests/abc237/tasks/abc237_c",
+    "samples": [
+      {
+        "input": "kasaka\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "atcoder\n",
+        "output": "No\n"
+      },
+      {
+        "input": "php\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc238_b": {
+    "url": "https://atcoder.jp/contests/abc238/tasks/abc238_b",
+    "samples": [
+      {
+        "input": "4\n90 180 45 195\n",
+        "output": "120\n"
+      },
+      {
+        "input": "1\n1\n",
+        "output": "359\n"
+      },
+      {
+        "input": "10\n215 137 320 339 341 41 44 18 241 149\n",
+        "output": "170\n"
+      }
+    ]
+  },
+  "abc239_b": {
+    "url": "https://atcoder.jp/contests/abc239/tasks/abc239_b",
+    "samples": [
+      {
+        "input": "47\n",
+        "output": "4\n"
+      },
+      {
+        "input": "-24\n",
+        "output": "-3\n"
+      },
+      {
+        "input": "50\n",
+        "output": "5\n"
+      },
+      {
+        "input": "-30\n",
+        "output": "-3\n"
+      },
+      {
+        "input": "987654321987654321\n",
+        "output": "98765432198765432\n"
+      }
+    ]
+  },
+  "abc240_c": {
+    "url": "https://atcoder.jp/contests/abc240/tasks/abc240_c",
+    "samples": [
+      {
+        "input": "2 10\n3 6\n4 5\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "2 10\n10 100\n10 100\n",
+        "output": "No\n"
+      },
+      {
+        "input": "4 12\n1 8\n5 7\n3 4\n2 6\n",
+        "output": "Yes\n"
+      }
+    ]
+  },
+  "abc241_b": {
+    "url": "https://atcoder.jp/contests/abc241/tasks/abc241_b",
+    "samples": [
+      {
+        "input": "3 2\n1 1 3\n3 1\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "1 1\n1000000000\n1\n",
+        "output": "No\n"
+      },
+      {
+        "input": "5 2\n1 2 3 4 5\n5 5\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc244_b": {
+    "url": "https://atcoder.jp/contests/abc244/tasks/abc244_b",
+    "samples": [
+      {
+        "input": "4\nSSRS\n",
+        "output": "2 -1\n"
+      },
+      {
+        "input": "20\nSRSRSSRSSSRSRRRRRSRR\n",
+        "output": "0 1\n"
+      }
+    ]
+  },
+  "abc248_b": {
+    "url": "https://atcoder.jp/contests/abc248/tasks/abc248_b",
+    "samples": [
+      {
+        "input": "1 4 2\n",
+        "output": "2\n"
+      },
+      {
+        "input": "7 7 10\n",
+        "output": "0\n"
+      },
+      {
+        "input": "31 415926 5\n",
+        "output": "6\n"
+      }
+    ]
+  },
+  "abc249_b": {
+    "url": "https://atcoder.jp/contests/abc249/tasks/abc249_b",
+    "samples": [
+      {
+        "input": "AtCoder\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "Aa\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "atcoder\n",
+        "output": "No\n"
+      },
+      {
+        "input": "Perfect\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc250_b": {
+    "url": "https://atcoder.jp/contests/abc250/tasks/abc250_b",
+    "samples": [
+      {
+        "input": "4 3 2\n",
+        "output": "..##..##\n..##..##\n..##..##\n##..##..\n##..##..\n##..##..\n..##..##\n..##..##\n..##..##\n##..##..\n##..##..\n##..##..\n"
+      },
+      {
+        "input": "5 1 5\n",
+        "output": ".....#####.....#####.....\n#####.....#####.....#####\n.....#####.....#####.....\n#####.....#####.....#####\n.....#####.....#####.....\n"
+      },
+      {
+        "input": "4 4 1\n",
+        "output": ".#.#\n.#.#\n.#.#\n.#.#\n#.#.\n#.#.\n#.#.\n#.#.\n.#.#\n.#.#\n.#.#\n.#.#\n#.#.\n#.#.\n#.#.\n#.#.\n"
+      },
+      {
+        "input": "1 4 4\n",
+        "output": "....\n....\n....\n....\n"
+      }
+    ]
+  },
+  "abc252_b": {
+    "url": "https://atcoder.jp/contests/abc252/tasks/abc252_b",
+    "samples": [
+      {
+        "input": "5 3\n6 8 10 7 10\n2 3 4\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "5 2\n100 100 100 1 1\n5 4\n",
+        "output": "No\n"
+      },
+      {
+        "input": "2 1\n100 1\n2\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc256_b": {
+    "url": "https://atcoder.jp/contests/abc256/tasks/abc256_b",
+    "samples": [
+      {
+        "input": "4\n1 1 3 2\n",
+        "output": "3\n"
+      },
+      {
+        "input": "3\n1 1 1\n",
+        "output": "0\n"
+      },
+      {
+        "input": "10\n2 2 4 1 1 1 4 2 2 1\n",
+        "output": "8\n"
+      }
+    ]
+  },
+  "abc257_b": {
+    "url": "https://atcoder.jp/contests/abc257/tasks/abc257_b",
+    "samples": [
+      {
+        "input": "5 3 5\n1 3 4\n3 3 1 1 2\n",
+        "output": "2 4 5\n"
+      },
+      {
+        "input": "2 2 2\n1 2\n1 2\n",
+        "output": "1 2\n"
+      },
+      {
+        "input": "10 6 9\n1 3 5 7 8 9\n1 2 3 4 5 6 5 6 2\n",
+        "output": "2 5 6 7 9 10\n"
+      }
+    ]
+  },
+  "abc258_b": {
+    "url": "https://atcoder.jp/contests/abc258/tasks/abc258_b",
+    "samples": [
+      {
+        "input": "4\n1161\n1119\n7111\n1811\n",
+        "output": "9786\n"
+      },
+      {
+        "input": "10\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n1111111111\n",
+        "output": "1111111111\n"
+      }
+    ]
+  },
+  "abc261_b": {
+    "url": "https://atcoder.jp/contests/abc261/tasks/abc261_b",
+    "samples": [
+      {
+        "input": "4\n-WWW\nL-DD\nLD-W\nLDW-\n",
+        "output": "incorrect\n"
+      },
+      {
+        "input": "2\n-D\nD-\n",
+        "output": "correct\n"
+      }
+    ]
+  },
+  "abc263_b": {
+    "url": "https://atcoder.jp/contests/abc263/tasks/abc263_b",
+    "samples": [
+      {
+        "input": "3\n1 2\n",
+        "output": "2\n"
+      },
+      {
+        "input": "10\n1 2 3 4 5 6 7 8 9\n",
+        "output": "9\n"
+      }
+    ]
+  },
+  "abc265_b": {
+    "url": "https://atcoder.jp/contests/abc265/tasks/abc265_b",
+    "samples": [
+      {
+        "input": "4 1 10\n5 7 5\n2 10\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "4 1 10\n10 7 5\n2 10\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc271_b": {
+    "url": "https://atcoder.jp/contests/abc271/tasks/abc271_b",
+    "samples": [
+      {
+        "input": "2 2\n3 1 4 7\n2 5 9\n1 3\n2 1\n",
+        "output": "7\n5\n"
+      },
+      {
+        "input": "3 4\n4 128 741 239 901\n2 1 1\n3 314 159 26535\n1 1\n2 2\n3 3\n1 4\n",
+        "output": "128\n1\n26535\n901\n"
+      }
+    ]
+  },
+  "abc272_b": {
+    "url": "https://atcoder.jp/contests/abc272/tasks/abc272_b",
+    "samples": [
+      {
+        "input": "3 3\n2 1 2\n2 2 3\n2 1 3\n",
+        "output": "Yes\n"
+      },
+      {
+        "input": "4 2\n3 1 2 4\n3 2 3 4\n",
+        "output": "No\n"
+      }
+    ]
+  },
+  "abc289_b": {
+    "url": "https://atcoder.jp/contests/abc289/tasks/abc289_b",
+    "samples": [
+      {
+        "input": "5 3\n1 3 4\n",
+        "output": "2 1 5 4 3\n"
+      },
+      {
+        "input": "5 0\n",
+        "output": "1 2 3 4 5\n"
+      },
+      {
+        "input": "10 6\n1 2 3 7 8 9\n",
+        "output": "4 3 2 1 5 6 10 9 8 7\n"
+      }
+    ]
+  },
+  "abc293_b": {
+    "url": "https://atcoder.jp/contests/abc293/tasks/abc293_b",
+    "samples": [
+      {
+        "input": "5\n3 1 4 5 4\n",
+        "output": "2\n2 4\n"
+      },
+      {
+        "input": "20\n9 7 19 7 10 4 13 9 4 8 10 15 16 3 18 19 12 13 2 12\n",
+        "output": "10\n1 2 5 6 8 11 14 17 18 20\n"
+      }
+    ]
+  },
+  "abc305_c": {
+    "url": "https://atcoder.jp/contests/abc305/tasks/abc305_c",
+    "samples": [
+      {
+        "input": "5 6\n......\n..#.#.\n..###.\n..###.\n......\n",
+        "output": "2 4\n"
+      },
+      {
+        "input": "3 2\n#.\n##\n##\n",
+        "output": "1 2\n"
+      },
+      {
+        "input": "6 6\n..####\n..##.#\n..####\n..####\n..####\n......\n",
+        "output": "2 5\n"
+      }
+    ]
+  },
+  "abc320_b": {
+    "url": "https://atcoder.jp/contests/abc320/tasks/abc320_b",
+    "samples": [
+      {
+        "input": "TOYOTA\n",
+        "output": "5\n"
+      },
+      {
+        "input": "ABCDEFG\n",
+        "output": "1\n"
+      },
+      {
+        "input": "AAAAAAAAAA\n",
+        "output": "10\n"
+      }
+    ]
+  },
+  "abc332_b": {
+    "url": "https://atcoder.jp/contests/abc332/tasks/abc332_b",
+    "samples": [
+      {
+        "input": "5 300 500\n",
+        "output": "200 500\n"
+      },
+      {
+        "input": "5 100 200\n",
+        "output": "0 0\n"
+      }
+    ]
+  },
+  "abc373_b": {
+    "url": "https://atcoder.jp/contests/abc373/tasks/abc373_b",
+    "samples": [
+      {
+        "input": "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n",
+        "output": "25\n"
+      },
+      {
+        "input": "MGJYIZDKSBHPVENFLQURTCWOAX\n",
+        "output": "223\n"
+      }
+    ]
+  },
+  "abc373_c": {
+    "url": "https://atcoder.jp/contests/abc373/tasks/abc373_c",
+    "samples": [
+      {
+        "input": "2\n-1 5\n3 -7\n",
+        "output": "8\n"
+      },
+      {
+        "input": "6\n15 12 3 -13 -1 -19\n7 17 -13 -10 18 4\n",
+        "output": "33\n"
+      }
+    ]
+  }
+}

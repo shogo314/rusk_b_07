@@ -1,0 +1,4 @@
+// A - Infinite Coins
+// https://atcoder.jp/contests/abc088/tasks/abc088_a
+in n,a:Int;
+wt n%500<=a;

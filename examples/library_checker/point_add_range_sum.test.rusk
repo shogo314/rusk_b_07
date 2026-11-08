@@ -1,0 +1,11 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/point_add_range_sum
+include "../beta02/library/fenwick.rusk";
+
+in n,q:Int;
+in values(n):Vec<Int>;
+let fw:=Fenwick(values,0);
+for query in 0..q {
+    in kind,l,r:Int;
+    if kind==0 { fw.add(l,r); }
+    else { wt fw.range_sum(l,r); }
+}

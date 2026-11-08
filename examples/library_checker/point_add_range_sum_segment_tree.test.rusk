@@ -1,0 +1,11 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/point_add_range_sum
+include "../beta02/library/sum_segment_tree.rusk";
+
+in n,q:Int;
+in values(n):Vec<Int>;
+let seg:=SumSegTree(values,0);
+for query in 0..q {
+    in kind,l,r:Int;
+    if kind==0 { seg.set(l,seg.prod(l,l+1)+r); }
+    else { wt seg.prod(l,r); }
+}

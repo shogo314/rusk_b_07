@@ -1,0 +1,7 @@
+// B - Contest with Drinks Easy
+// https://atcoder.jp/contests/abc050/tasks/abc050_b
+in n:Int;
+in t(n):Vec<Int>;
+let total:=t.sum();
+in m:Int;
+for i in 0..m { in p,x:Int; wt total-t[p-1]+x; }

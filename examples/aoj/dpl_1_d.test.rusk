@@ -1,0 +1,13 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_D
+// DPL_1_D - Longest Increasing Subsequence
+// https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_D
+// 二分探索とDP
+in n:Int;
+in a(n):Vec<Int>;
+let tails:Vec<Int>:=[];
+for value in a {
+    let position:=tails.bisect_left(value);
+    if position==tails.len() { tails.push_back(value); }
+    else { tails[position]:=value; }
+}
+wt tails.len();

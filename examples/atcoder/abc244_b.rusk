@@ -1,0 +1,12 @@
+// B - Go Straight and Turn Right
+// https://atcoder.jp/contests/abc244/tasks/abc244_b
+// 方向とシミュレーション
+in n:Int;
+in commands:Str;
+let dx:=[1,0,-1,0]; let dy:=[0,-1,0,1];
+let direction:=0; let x:=0; let y:=0;
+for i in 0..n {
+    if commands[i]=='R' { direction=(direction+1)%4; }
+    else { x+=dx[direction]; y+=dy[direction]; }
+}
+wt x,y;

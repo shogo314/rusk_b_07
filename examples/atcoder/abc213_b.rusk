@@ -1,0 +1,7 @@
+// B - Booby Prize
+// https://atcoder.jp/contests/abc213/tasks/abc213_b
+// ソートと元の位置
+in n:Int;
+in a(n):Vec<Int>;
+let ordered:=a.sorted();
+for i in 0..n { if a[i]==ordered[-2] { wt i+1; } }

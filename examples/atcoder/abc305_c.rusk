@@ -1,0 +1,17 @@
+// C - Snuke the Cookie Picker
+// https://atcoder.jp/contests/abc305/tasks/abc305_c
+in h,w:Int;
+in grid(h):Vec<Str>;
+// Keep the input dimensions unchanged while updating the bounding box.
+let top = h; let bottom:=0; let left = w; let right:=0;
+for r in 0..h {
+    for c in 0..w {
+        if grid[r][c]=='#' {
+            top=min(top,r); bottom=max(bottom,r);
+            left=min(left,c); right=max(right,c);
+        }
+    }
+}
+for r in top..(bottom+1) {
+    for c in left..(right+1) { if grid[r][c]=='.' { wt r+1,c+1; } }
+}

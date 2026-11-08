@@ -1,0 +1,10 @@
+// Read N integers and sum them.
+in n: Int;
+let i := 0;
+let total := 0;
+while i < n {
+    in x: Int;
+    total += x;
+    i += 1;
+}
+wt total;

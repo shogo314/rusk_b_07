@@ -1,0 +1,12 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_3_C
+cases: while true {
+    let pair:={
+        let first:=try_read::<Int>();
+        if first.is_none(){break cases;}
+        in second:Int;
+        (first?!,second)
+    };
+    let (a,b):=pair;
+    if a==0&&b==0 {break cases;}
+    wt if a<b {let low:=a;(low,b)} else {(b,a)};
+}

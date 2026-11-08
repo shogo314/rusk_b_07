@@ -1,0 +1,13 @@
+// B - Everyone is Friends
+// https://atcoder.jp/contests/abc272/tasks/abc272_b
+// 隣接行列
+in n,m:Int;
+let met:=[[false;n];n];
+for party in 0..m {
+    in k:Int;
+    in guests(k):Vec<Int>;
+    for a in guests { for b in guests { met[a-1][b-1]=true; } }
+}
+let everyone:=true;
+for a in 0..n { for b in (a+1)..n { if !met[a][b] { everyone=false; } } }
+wt everyone;

@@ -1,0 +1,6 @@
+// A - Something on It
+// https://atcoder.jp/contests/abc095/tasks/abc095_a
+in s:Str;
+let price:=700;
+for i in 0..s.len() { if s[i]=='o' { price+=100; } }
+wt price;

@@ -1,0 +1,14 @@
+struct Point { x:Int; y:Int; }
+enum Message<T> { Data(T), Empty }
+let message:=Message::Data(Some((2,Point{x:3,y:4})));
+wt match message {
+    Data(Some((n,Point{x:3,y}))) if n>0=>n+y,
+    Data(Some(_))|Data(None)=>-1,
+    Empty=>0,
+};
+if let Data(Some((n,Point{x,..})))=message {wt n,x;}
+let count:=0;
+outer:while let Some(n)=if count<3{Some(count+=1)}else{None}{
+    if n==2{continue outer;}
+    wt n;
+}else{wt "done";}

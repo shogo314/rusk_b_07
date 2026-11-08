@@ -1,0 +1,13 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_4_D
+// Source: https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ALDS1_4_D
+fn fits(weights:Vec<Int>,capacity:Int,trucks:Int)->Bool {
+    let count:=1;let loaded:=0;
+    for weight in weights {
+        if loaded+weight>capacity {count+=1;loaded=0;}
+        loaded+=weight;
+    }
+    return count<=trucks;
+}
+in n,k:Int;in weights(n):Vec<Int>;
+let low:=fold(weights,0,max);
+wt first_true(low,weights.sum()+1,(capacity:Int)=>fits(weights,capacity,k));

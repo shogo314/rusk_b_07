@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_3_C
+while let (Some(a),Some(b))=(try_read::<Int>(),try_read::<Int>()){
+    match (a,b){
+        (0,0)=>{break;}
+        (x,y) if x>y=>{wt y,x;}
+        (x,y)=>{wt x,y;}
+    }
+}

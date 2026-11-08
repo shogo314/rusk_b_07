@@ -1,0 +1,18 @@
+{
+  "version": "beta07 starting point",
+  "source_repository": "https://github.com/shogo314/rusk_b_06",
+  "source_commit": "899a47fdc8811dd64e917550ed5459af99a3146e",
+  "test_ci": "https://github.com/shogo314/rusk_b_06/actions/runs/42463022653",
+  "documentation_ci": "https://github.com/shogo314/rusk_b_06/actions/runs/42463022642",
+  "test_ci_conclusion": "success",
+  "documentation_ci_conclusion": "success",
+  "local_tests": 274,
+  "reference_tests": 160,
+  "sanitizer_cases": 20,
+  "public_solutions": 51,
+  "public_cases": 810,
+  "baseline_compiler": "/tmp/rusk-beta06-baseline",
+  "baseline_compiler_sha256": "9f8125870b457273dfb153345b83ee3233311d584e5347bb83f83d880a9ce7c8",
+  "source_archive": "/tmp/rusk_b_06-899a47f.tar.gz",
+  "source_archive_sha256": "7dfdd96bf28fe1e9f431db72369378505a231664834ac29653e86b6e73156436"
+}

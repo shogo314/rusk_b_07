@@ -1,0 +1,17 @@
+let counts:=Dict::<Str,Int>();
+for word in ["apple","pear","apple"] {counts[word]+=1;}
+wt counts.get("apple")??0,counts.get("missing")??0;
+
+let seen:=Set::<(Int,Int)>();
+seen.insert((2,3));seen.insert((2,3));
+wt seen.len(),seen.contains((2,3));
+
+let payload:=Some([1,2]);
+let selected:=if payload.is_some(){payload?!}else{[0]};
+selected[0]=9;wt payload.value();
+payload=None;wt payload.is_none(),selected;
+
+let value:=5;
+wt 0<=value<10;
+wt if value<10{"small"}else{"large"};
+wt [3,1,3].find(3)??(-1);

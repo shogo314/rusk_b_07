@@ -1,0 +1,14 @@
+// B - Job Assignment
+// https://atcoder.jp/contests/abc194/tasks/abc194_b
+in n:Int;
+let a:Vec<Int>:=[];
+let b:Vec<Int>:=[];
+for i in 0..n { in x,y:Int; a.push_back(x); b.push_back(y); }
+let answer:=200000;
+for i in 0..n {
+    for j in 0..n {
+        if i==j { answer=min(answer,a[i]+b[j]); }
+        else { answer=min(answer,max(a[i],b[j])); }
+    }
+}
+wt answer;

@@ -1,0 +1,11 @@
+let best:=100;
+let alias:=best;
+best<?=7+3;
+best>?=4;
+wt best,alias,8<?4>?6;
+struct Entry{rank:Int;data:Vec<Int>;}
+fn __lt__(a:Entry,b:Entry)->Bool{return a.rank<b.rank;}
+let entry:=Entry{rank:1,data:[10]};let held:=entry.data;
+entry<?=Entry{rank:2,data:[20]};held[0]=11;wt entry.data;
+let detached:=entry<?Entry{rank:1,data:[30]};detached.data[0]=99;
+wt entry.data,detached.data;

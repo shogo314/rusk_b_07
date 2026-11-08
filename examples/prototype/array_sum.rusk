@@ -1,0 +1,6 @@
+// Input: N, followed by N integers. Output their sum.
+in n: Int;
+in a(n): Vec<Int>;
+let total := 0;
+for x in a { total += x; }
+wt total;

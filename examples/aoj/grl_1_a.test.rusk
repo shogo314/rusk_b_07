@@ -1,0 +1,23 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/GRL_1_A
+// Source: https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_A
+include "../beta04/library/priority_queue.rusk";
+struct Edge { to:Int; cost:Int; }
+struct State { vertex:Int; distance:Int; }
+in n,m,source:Int;
+let graph:Vec<Vec<Edge>>:=[[];n];
+for i in 0..m { in u,v,cost:Int;graph[u].push_back(Edge{to:v,cost:cost}); }
+let distance:=[1000000000000000000;n];distance[source]=0;
+let initial:=[State{vertex:source,distance:0}];
+let queue:=PriorityQueue(initial,(a:State,b:State)=>a.distance<b.distance);
+while !queue.is_empty() {
+    let state:=queue.pop();
+    if state.distance!=distance[state.vertex] {continue;}
+    for edge in graph[state.vertex] {
+        let next:=state.distance+edge.cost;
+        if next<distance[edge.to] {
+            distance[edge.to]=next;
+            queue.push(State{vertex:edge.to,distance:next});
+        }
+    }
+}
+for d in distance {if d==1000000000000000000 {wt "INF";}else{wt d;}}

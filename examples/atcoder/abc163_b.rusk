@@ -1,0 +1,7 @@
+// B - Homework
+// https://atcoder.jp/contests/abc163/tasks/abc163_b
+// 配列の合計
+in n,m:Int;
+in days(m):Vec<Int>;
+let remaining:=n-days.sum();
+if remaining<0 { wt -1; } else { wt remaining; }

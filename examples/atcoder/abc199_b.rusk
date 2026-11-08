@@ -1,0 +1,9 @@
+// B - Intersection
+// https://atcoder.jp/contests/abc199/tasks/abc199_b
+// 区間の共通部分
+in n:Int;
+in a(n),b(n):Vec<Int>;
+let low:=0; let high:=1000;
+for value in a { low=max(low,value); }
+for value in b { high=min(high,value); }
+wt max(0,high-low+1);

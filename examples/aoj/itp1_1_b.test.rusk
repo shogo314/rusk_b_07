@@ -1,0 +1,6 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_B
+// ITP1_1_B - Cube
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_B
+// 整数演算
+in x:Int;
+wt x*x*x;

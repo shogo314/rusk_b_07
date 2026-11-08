@@ -1,0 +1,67 @@
+// operation is associative, returns an independent result; identity is neutral.
+struct SegTree<T,F> { length:Int; size:Int; values:Vec<T>; identity:T; operation:F; }
+fn SegTree<T,F>(values:Vec<T>,identity:T,operation:F)->SegTree<T,F> {
+    let size:=1;while size<values.len() {size*=2;}
+    let data:=[identity;2*size];
+    for i in 0..values.len() {data[size+i]=values[i];}
+    let index:=size-1;
+    while index>0 {data[index]=operation(data[2*index],data[2*index+1]);index-=1;}
+    return SegTree::<T,F>{length:values.len(),size:size,values:data,identity:copy(identity),operation:operation};
+}
+fn set<T,F>(seg:SegTree<T,F>,position:Int,value:T) {
+    assert(0<=position && position<seg.length);
+    let index:=position+seg.size;seg.values[index]=value;
+    while index>1 {index/=2;seg.values[index]=seg.operation(seg.values[2*index],seg.values[2*index+1]);}
+}
+fn get<T,F>(seg:SegTree<T,F>,position:Int)->T {
+    assert(0<=position && position<seg.length);return copy(seg.values[seg.size+position]);
+}
+fn prod<T,F>(seg:SegTree<T,F>,left:Int,right:Int)->T {
+    assert(0<=left && left<=right && right<=seg.length);
+    let l:=left+seg.size;let r:=right+seg.size;
+    let a=seg.identity;let b=seg.identity;
+    while l<r {
+        if l%2==1 {a:=seg.operation(a,seg.values[l]);l+=1;}
+        if r%2==1 {r-=1;b:=seg.operation(seg.values[r],b);}
+        l/=2;r/=2;
+    }
+    return seg.operation(a,b);
+}
+fn max_right<T,F,P>(seg:SegTree<T,F>,left:Int,predicate:P)->Int {
+    assert(0<=left && left<=seg.length);assert(predicate(copy(seg.identity)));
+    if left==seg.length {return seg.length;}
+    let index:=left+seg.size;let total=seg.identity;
+    loop {
+        while index%2==0 {index/=2;}
+        let candidate:=seg.operation(total,seg.values[index]);
+        if !predicate(candidate) {
+            while index<seg.size {
+                index*=2;let next:=seg.operation(total,seg.values[index]);
+                if predicate(next) {total:=next;index+=1;}
+            }
+            return index-seg.size;
+        }
+        total:=candidate;index+=1;
+        if (index & -index)==index {break;}
+    }
+    return seg.length;
+}
+fn min_left<T,F,P>(seg:SegTree<T,F>,right:Int,predicate:P)->Int {
+    assert(0<=right && right<=seg.length);assert(predicate(copy(seg.identity)));
+    if right==0 {return 0;}
+    let index:=right+seg.size;let total=seg.identity;
+    loop {
+        index-=1;while index>1 && index%2==1 {index/=2;}
+        let candidate:=seg.operation(seg.values[index],total);
+        if !predicate(candidate) {
+            while index<seg.size {
+                index=2*index+1;let next:=seg.operation(seg.values[index],total);
+                if predicate(next) {total:=next;index-=1;}
+            }
+            return index+1-seg.size;
+        }
+        total:=candidate;
+        if (index & -index)==index {break;}
+    }
+    return 0;
+}

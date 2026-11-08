@@ -1,0 +1,8 @@
+// B - Orthogonality
+// https://atcoder.jp/contests/abc188/tasks/abc188_b
+// 内積
+in n:Int;
+in a(n),b(n):Vec<Int>;
+let product:=0;
+for i in 0..n { product+=a[i]*b[i]; }
+wt product==0;

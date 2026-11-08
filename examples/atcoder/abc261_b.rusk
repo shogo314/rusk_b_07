@@ -1,0 +1,15 @@
+// B - Tournament Result
+// https://atcoder.jp/contests/abc261/tasks/abc261_b
+// 行列の整合性検査
+in n:Int;
+in results(n):Vec<Str>;
+let valid:=true;
+for i in 0..n {
+    for j in (i+1)..n {
+        let a:=results[i][j]; let b:=results[j][i];
+        if !((a=='W' && b=='L') || (a=='L' && b=='W') || (a=='D' && b=='D')) {
+            valid=false;
+        }
+    }
+}
+if valid { wt "correct"; } else { wt "incorrect"; }

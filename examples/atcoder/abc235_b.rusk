@@ -1,0 +1,8 @@
+// B - Climbing Takahashi
+// https://atcoder.jp/contests/abc235/tasks/abc235_b
+// 単調な区間
+in n:Int;
+in heights(n):Vec<Int>;
+let position:=0;
+while position+1<n && heights[position]<heights[position+1] { position+=1; }
+wt heights[position];

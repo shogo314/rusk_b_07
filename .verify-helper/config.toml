@@ -1,0 +1,5 @@
+[languages.rusk]
+compile = "python3 tools/verify_rusk.py compile '{path}' '{tempdir}'"
+execute = "'{tempdir}/main'"
+list_dependencies = "python3 tools/verify_rusk.py dependencies '{path}'"
+verification_file_suffix = ".test.rusk"

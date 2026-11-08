@@ -1,0 +1,6 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_D
+// ITP1_1_D - Watch
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_D
+// 文字列と整数演算
+in seconds:Int;
+wt Str(seconds/3600)+":"+Str(seconds/60%60)+":"+Str(seconds%60);

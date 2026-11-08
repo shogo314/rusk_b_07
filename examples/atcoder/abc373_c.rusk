@@ -1,0 +1,8 @@
+// C - Max Ai+Bj
+// https://atcoder.jp/contests/abc373/tasks/abc373_c
+in n:Int;
+in a(n),b(n):Vec<Int>;
+let best_a = a[0]; let best_b = b[0];
+for value in a { best_a=max(best_a,value); }
+for value in b { best_b=max(best_b,value); }
+wt best_a+best_b;

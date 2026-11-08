@@ -1,0 +1,16 @@
+// B - Batters
+// https://atcoder.jp/contests/abc256/tasks/abc256_b
+// 固定長配列のシミュレーション
+in n:Int;
+in advances(n):Vec<Int>;
+let bases:=[0;4]; let score:=0;
+for advance in advances {
+    bases[0]+=1;
+    let next:=[0;4];
+    for position in 0..4 {
+        if position+advance>=4 { score+=bases[position]; }
+        else { next[position+advance]+=bases[position]; }
+    }
+    bases:=next;
+}
+wt score;

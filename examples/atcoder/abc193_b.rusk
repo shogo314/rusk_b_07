@@ -1,0 +1,10 @@
+// B - Play Snuke
+// https://atcoder.jp/contests/abc193/tasks/abc193_b
+// 条件付き最小値
+in n:Int;
+let answer:=-1;
+for i in 0..n {
+    in a,p,x:Int;
+    if a<x && (answer==-1 || p<answer) { answer:=p; }
+}
+wt answer;

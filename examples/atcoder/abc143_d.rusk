@@ -1,0 +1,16 @@
+// D - Triangles
+// https://atcoder.jp/contests/abc143/tasks/abc143_d
+// ソートと尺取り法
+in n:Int;
+in lengths(n):Vec<Int>;
+lengths.sort();
+let answer:=0;
+for i in 0..n {
+    let end:=i+2;
+    for j in (i+1)..n {
+        end=max(end,j+1);
+        while end<n && lengths[end]<lengths[i]+lengths[j] { end+=1; }
+        answer+=end-j-1;
+    }
+}
+wt answer;

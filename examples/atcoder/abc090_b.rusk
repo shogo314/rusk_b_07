@@ -1,0 +1,10 @@
+// B - Palindromic Numbers
+// https://atcoder.jp/contests/abc090/tasks/abc090_b
+// 桁の比較
+in a,b:Int;
+let answer:=0;
+for value in a..(b+1) {
+    let s:=Str(value);
+    if s[0]==s[4] && s[1]==s[3] { answer+=1; }
+}
+wt answer;

@@ -1,0 +1,13 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/zalgorithm
+// Z Algorithm
+// 線形時間の文字列走査
+in s:Str;
+let n:=s.len();
+let z:=[0;n]; z[0]=n;
+let left:=0; let right:=0;
+for i in 1..n {
+    if i<right { z[i]=min(right-i,z[i-left]); }
+    while i+z[i]<n && s[z[i]]==s[i+z[i]] { z[i]+=1; }
+    if i+z[i]>right { left:=i; right:=i+z[i]; }
+}
+wt z;

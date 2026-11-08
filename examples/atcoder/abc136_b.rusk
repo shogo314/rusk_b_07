@@ -1,0 +1,6 @@
+// B - Uneven Numbers
+// https://atcoder.jp/contests/abc136/tasks/abc136_b
+in n:Int;
+let answer:=0;
+for i in 1..(n+1) { if Str(i).len()%2==1 { answer+=1; } }
+wt answer;

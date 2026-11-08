@@ -1,0 +1,11 @@
+// B - Go to Jail
+// https://atcoder.jp/contests/abc179/tasks/abc179_b
+// 連続区間の計数
+in n:Int;
+let streak:=0; let found:=false;
+for i in 0..n {
+    in a,b:Int;
+    if a==b { streak+=1; } else { streak=0; }
+    if streak>=3 { found=true; }
+}
+wt found;

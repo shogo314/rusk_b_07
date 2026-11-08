@@ -1,0 +1,8 @@
+// B - 1 21
+// https://atcoder.jp/contests/abc086/tasks/abc086_b
+// 整数の平方
+in a,b:Str;
+let value:=Int(a+b);
+let root:=0;
+while root*root<value { root+=1; }
+wt root*root==value;

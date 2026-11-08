@@ -1,0 +1,16 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_7_B
+// ITP1_7_B - How Many Ways?
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_7_B
+// 全探索
+loop {
+    in n,x:Int;
+    if n==0 && x==0 { break; }
+    let answer:=0;
+    for a in 1..(n+1) {
+        for b in (a+1)..(n+1) {
+            let c:=x-a-b;
+            if b<c && c<=n { answer+=1; }
+        }
+    }
+    wt answer;
+}

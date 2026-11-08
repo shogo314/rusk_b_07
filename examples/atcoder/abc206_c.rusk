@@ -1,0 +1,16 @@
+// C - Swappable
+// https://atcoder.jp/contests/abc206/tasks/abc206_c
+// ソートと同値区間
+in n:Int;
+in a(n):Vec<Int>;
+a.sort();
+let answer:=n*(n-1)/2;
+let start:=0;
+while start<n {
+    let end:=start+1;
+    while end<n && a[end]==a[start] { end+=1; }
+    let count:=end-start;
+    answer-=count*(count-1)/2;
+    start:=end;
+}
+wt answer;

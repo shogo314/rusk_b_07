@@ -1,0 +1,10 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/unionfind
+include "../beta02/library/union_find.rusk";
+
+in n,q:Int;
+let uf:=UnionFind(n);
+for query in 0..q {
+    in kind,u,v:Int;
+    if kind==0 { uf.unite(u,v); }
+    else { wt Int(uf.same(u,v)); }
+}

@@ -1,0 +1,12 @@
+// B - typo
+// https://atcoder.jp/contests/abc221/tasks/abc221_b
+// 隣接交換の全探索
+in s,t:Str;
+let possible:=s==t;
+for i in 0..(s.len()-1) {
+    let candidate = s;
+    let held = candidate[i];
+    candidate[i]=candidate[i+1]; candidate[i+1]=held;
+    if candidate==t { possible=true; }
+}
+wt possible;

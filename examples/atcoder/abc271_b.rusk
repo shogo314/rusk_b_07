@@ -1,0 +1,7 @@
+// B - Maintain Multiple Sequences
+// https://atcoder.jp/contests/abc271/tasks/abc271_b
+// 多次元配列とクエリ
+in n,q:Int;
+let sequences:Vec<Vec<Int>>:=[];
+for i in 0..n { in length:Int; in row(length):Vec<Int>; sequences.push_back(row); }
+for i in 0..q { in s,t:Int; wt sequences[s-1][t-1]; }

@@ -1,0 +1,11 @@
+// C - Doubled
+// https://atcoder.jp/contests/abc196/tasks/abc196_c
+// 候補の生成
+in n:Int;
+let answer:=0;
+for half in 1..1000000 {
+    let s:=Str(half);
+    if Int(s+s)>n { break; }
+    answer+=1;
+}
+wt answer;

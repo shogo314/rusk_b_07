@@ -1,0 +1,17 @@
+// C - Unlucky 7
+// https://atcoder.jp/contests/abc186/tasks/abc186_c
+// 基数ごとの桁の検査
+fn contains_seven(n:Int,base:Int)->Bool {
+    let value = n;
+    while value {
+        if value%base==7 { return true; }
+        value/=base;
+    }
+    return false;
+}
+in n:Int;
+let answer:=0;
+for value in 1..(n+1) {
+    if !contains_seven(value,10) && !contains_seven(value,8) { answer+=1; }
+}
+wt answer;

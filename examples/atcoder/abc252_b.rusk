@@ -1,0 +1,10 @@
+// B - Takahashi's Failure
+// https://atcoder.jp/contests/abc252/tasks/abc252_b
+// 最大値と検索
+in n,k:Int;
+in a(n),disliked(k):Vec<Int>;
+let best:=0;
+for value in a { best=max(best,value); }
+let possible:=false;
+for index in disliked { if a[index-1]==best { possible=true; } }
+wt possible;

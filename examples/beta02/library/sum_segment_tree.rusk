@@ -1,0 +1,45 @@
+// Associative + with an explicit identity; prod preserves left-to-right order.
+struct SumSegTree<T> {
+    length: Int;
+    size: Int;
+    tree: Vec<T>;
+    zero: T;
+}
+
+fn SumSegTree<T>(values: Vec<T>, zero: T) -> SumSegTree<T> {
+    let size := 1;
+    while size < values.len() { size *= 2; }
+    let tree := [zero; 2*size];
+    for i in 0..values.len() { tree[size+i] = values[i]; }
+    let index := size-1;
+    while index > 0 {
+        tree[index] = tree[2*index] + tree[2*index+1];
+        index -= 1;
+    }
+    return SumSegTree::<T> { length: values.len(), size: size, tree: tree, zero: copy(zero) };
+}
+
+fn set<T>(seg: SumSegTree<T>, position: Int, value: T) {
+    assert(0 <= position && position < seg.length);
+    let index := seg.size+position;
+    seg.tree[index] = value;
+    while index > 1 {
+        index /= 2;
+        seg.tree[index] = seg.tree[2*index] + seg.tree[2*index+1];
+    }
+}
+
+fn prod<T>(seg: SumSegTree<T>, left: Int, right: Int) -> T {
+    assert(0 <= left && left <= right && right <= seg.length);
+    let l := left+seg.size;
+    let r := right+seg.size;
+    let left_total = seg.zero;
+    let right_total = seg.zero;
+    while l < r {
+        if l%2 == 1 { left_total := left_total + seg.tree[l]; l += 1; }
+        if r%2 == 1 { r -= 1; right_total := seg.tree[r] + right_total; }
+        l /= 2;
+        r /= 2;
+    }
+    return left_total + right_total;
+}

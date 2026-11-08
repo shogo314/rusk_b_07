@@ -1,0 +1,7 @@
+// B - Savings
+// https://atcoder.jp/contests/abc206/tasks/abc206_b
+// 累積和
+in n:Int;
+let days:=0; let total:=0;
+while total<n { days+=1; total+=days; }
+wt days;

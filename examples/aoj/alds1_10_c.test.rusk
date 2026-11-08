@@ -1,0 +1,18 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_C
+// ALDS1_10_C - Longest Common Subsequence
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_C
+// 文字列DP
+fn lcs(x:Str,y:Str)->Int {
+    let previous:=[0;y.len()+1];
+    for i in 0..x.len() {
+        let current:=[0;y.len()+1];
+        for j in 0..y.len() {
+            if x[i]==y[j] { current[j+1]=previous[j]+1; }
+            else { current[j+1]=max(previous[j+1],current[j]); }
+        }
+        previous:=current;
+    }
+    return previous[-1];
+}
+in q:Int;
+for i in 0..q { in x,y:Str; wt lcs(x,y); }

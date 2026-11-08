@@ -1,0 +1,14 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_4_B
+// ALDS1_4_B - Binary Search
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_4_B
+// 二分探索
+in n:Int;
+in sorted(n):Vec<Int>;
+in q:Int;
+in queries(q):Vec<Int>;
+let count:=0;
+for query in queries {
+    let position:=sorted.bisect_left(query);
+    if position<n && sorted[position]==query { count+=1; }
+}
+wt count;

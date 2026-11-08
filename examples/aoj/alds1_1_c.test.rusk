@@ -1,0 +1,19 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_C
+// ALDS1_1_C - Prime Numbers
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_C
+// 試し割り
+fn prime(value:Int)->Bool {
+    if value<2 { return false; }
+    if value%2==0 { return value==2; }
+    let divisor:=3;
+    while divisor*divisor<=value {
+        if value%divisor==0 { return false; }
+        divisor+=2;
+    }
+    return true;
+}
+in n:Int;
+in values(n):Vec<Int>;
+let count:=0;
+for value in values { if prime(value) { count+=1; } }
+wt count;

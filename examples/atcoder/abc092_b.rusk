@@ -1,0 +1,8 @@
+// B - Chocolate
+// https://atcoder.jp/contests/abc092/tasks/abc092_b
+// 整数の切り上げ
+in n,d,x:Int;
+in intervals(n):Vec<Int>;
+let answer = x;
+for interval in intervals { answer+=(d-1)/interval+1; }
+wt answer;

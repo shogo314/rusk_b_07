@@ -1,0 +1,10 @@
+let a := 10;
+let alias := a;
+let independent := copy(a);
+a += 1;
+wt a, alias, independent;
+a := 20;
+wt a, alias;
+let value: Int;
+value := -7 / 3;
+wt value, -7 % 3;

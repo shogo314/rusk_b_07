@@ -1,0 +1,23 @@
+// B - Number Box
+// https://atcoder.jp/contests/abc258/tasks/abc258_b
+// 八方向の全探索
+in n:Int;
+in grid(n):Vec<Str>;
+let answer:=0;
+for r in 0..n {
+    for c in 0..n {
+        for dr in -1..2 {
+            for dc in -1..2 {
+                if dr==0 && dc==0 { continue; }
+                let value:=0;
+                for step in 0..n {
+                    let row:=(r+dr*step)%n;
+                    let column:=(c+dc*step)%n;
+                    value=value*10+(grid[row][column]-'0');
+                }
+                answer=max(answer,value);
+            }
+        }
+    }
+}
+wt answer;

@@ -1,0 +1,11 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/DSL_3_A
+// Source: https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=DSL_3_A
+include "../beta04/library/segment_tree.rusk";
+in n,target:Int;in values(n):Vec<Int>;
+let seg:=SegTree(values,0,(a:Int,b:Int)=>a+b);
+let answer:=n+1;
+for right in 1..n+1 {
+    let left:=seg.min_left(right,(sum:Int)=>sum<target);
+    if left>0 {answer=min(answer,right-left+1);}
+}
+if answer==n+1 {wt 0;}else{wt answer;}

@@ -1,0 +1,41 @@
+// compare(a,b) means a has higher priority. Values are copied on insertion.
+struct PriorityQueue<T,F> { values:Vec<T>; compare:F; }
+fn sift_down<T,F>(queue:PriorityQueue<T,F>,position:Int) {
+    let index=position;
+    while 2*index+1<queue.values.len() {
+        let child:=2*index+1;
+        if child+1<queue.values.len() && queue.compare(queue.values[child+1],queue.values[child]) { child+=1; }
+        if !queue.compare(queue.values[child],queue.values[index]) { break; }
+        let held:=queue.values[index];
+        queue.values[index]:=queue.values[child]; queue.values[child]:=held;
+        index:=child;
+    }
+}
+fn PriorityQueue<T,F>(values:Vec<T>,compare:F)->PriorityQueue<T,F> {
+    let queue:=PriorityQueue::<T,F>{values:copy(values),compare:compare};
+    let index:=values.len()/2-1;
+    while index>=0 { queue.sift_down(index); index-=1; }
+    return queue;
+}
+fn len<T,F>(queue:PriorityQueue<T,F>)->Int { return queue.values.len(); }
+fn is_empty<T,F>(queue:PriorityQueue<T,F>)->Bool { return queue.values.len()==0; }
+fn push<T,F>(queue:PriorityQueue<T,F>,value:T) {
+    queue.values.push_back(copy(value));
+    let index:=queue.values.len()-1;
+    while index>0 {
+        let parent:=(index-1)/2;
+        if !queue.compare(queue.values[index],queue.values[parent]) { break; }
+        let held:=queue.values[index];
+        queue.values[index]:=queue.values[parent];queue.values[parent]:=held;
+        index:=parent;
+    }
+}
+fn top<T,F>(queue:PriorityQueue<T,F>)->T {
+    assert(!queue.is_empty()); return copy(queue.values[0]);
+}
+fn pop<T,F>(queue:PriorityQueue<T,F>)->T {
+    assert(!queue.is_empty());
+    let answer:=queue.values[0];let last:=queue.values.pop_back();
+    if !queue.is_empty() { queue.values[0]:=last;queue.sift_down(0); }
+    return answer;
+}

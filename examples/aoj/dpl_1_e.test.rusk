@@ -1,0 +1,16 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_E
+// DPL_1_E - Edit Distance
+// https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_E
+// 文字列DP
+in s,t:Str;
+let previous:Vec<Int>:=[];
+for j in 0..(t.len()+1) { previous.push_back(j); }
+for i in 0..s.len() {
+    let current:=[0;t.len()+1]; current[0]=i+1;
+    for j in 0..t.len() {
+        let replace:=previous[j]+Int(s[i]!=t[j]);
+        current[j+1]=min(replace,min(previous[j+1]+1,current[j]+1));
+    }
+    previous:=current;
+}
+wt previous[-1];

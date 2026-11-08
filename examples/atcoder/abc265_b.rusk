@@ -1,0 +1,14 @@
+// B - Explore
+// https://atcoder.jp/contests/abc265/tasks/abc265_b
+// シミュレーションとボーナス配列
+in n,m,t:Int;
+in costs(n-1):Vec<Int>;
+let bonus:=[0;n];
+for i in 0..m { in room,time:Int; bonus[room-1]:=time; }
+let possible:=true;
+for i in 0..(n-1) {
+    t+=bonus[i];
+    if t<=costs[i] { possible=false; break; }
+    t-=costs[i];
+}
+wt possible;

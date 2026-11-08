@@ -1,0 +1,10 @@
+// C - Exception Handling
+// https://atcoder.jp/contests/abc134/tasks/abc134_c
+// ソートと最大値
+in n:Int;
+in a(n):Vec<Int>;
+let ordered:=a.sorted();
+for value in a {
+    if value==ordered[-1] { wt ordered[-2]; }
+    else { wt ordered[-1]; }
+}

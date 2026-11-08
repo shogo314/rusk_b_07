@@ -1,0 +1,14 @@
+// B - Perfect String
+// https://atcoder.jp/contests/abc249/tasks/abc249_b
+// 文字の頻度配列
+in s:Str;
+let used:=[false;128];
+let upper:=false; let lower:=false; let distinct:=true;
+for i in 0..s.len() {
+    let code:=Int(s[i]);
+    if used[code] { distinct=false; }
+    used[code]=true;
+    if 'A'<=s[i] && s[i]<='Z' { upper=true; }
+    if 'a'<=s[i] && s[i]<='z' { lower=true; }
+}
+wt upper && lower && distinct;

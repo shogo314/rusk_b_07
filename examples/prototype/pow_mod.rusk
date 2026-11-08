@@ -1,0 +1,11 @@
+// Input: A N M (0 <= A < 1e9, N >= 0, 1 <= M <= 1e9).
+// Output A^N modulo M, using recursion.
+fn pow_mod(a: Int, n: Int, modulus: Int) -> Int {
+    if n == 0 { return 1 % modulus; }
+    let half := pow_mod(a, n / 2, modulus);
+    let result := half * half % modulus;
+    if n % 2 { result = result * a % modulus; }
+    return result;
+}
+in a, n, modulus: Int;
+wt pow_mod(a, n, modulus);

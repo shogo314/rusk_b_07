@@ -1,0 +1,10 @@
+// B - Hard Calculation
+// https://atcoder.jp/contests/abc229/tasks/abc229_b
+// 桁ごとの計算
+in a,b:Int;
+let hard:=false;
+while a || b {
+    if a%10+b%10>=10 { hard=true; }
+    a/=10; b/=10;
+}
+if hard { wt "Hard"; } else { wt "Easy"; }

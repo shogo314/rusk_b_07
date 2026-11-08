@@ -1,0 +1,11 @@
+// C - Buy an Integer
+// https://atcoder.jp/contests/abc146/tasks/abc146_c
+// 答えの二分探索
+in a,b,x:Int;
+let low:=0; let high:=1000000001;
+while high-low>1 {
+    let middle:=(low+high)/2;
+    if a*middle+b*Str(middle).len()<=x { low:=middle; }
+    else { high:=middle; }
+}
+wt low;

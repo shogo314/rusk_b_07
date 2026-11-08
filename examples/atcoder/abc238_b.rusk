@@ -1,0 +1,11 @@
+// B - Pizza
+// https://atcoder.jp/contests/abc238/tasks/abc238_b
+// 角度の累積とソート
+in n:Int;
+in rotations(n):Vec<Int>;
+let cuts:=[0,360]; let angle:=0;
+for rotation in rotations { angle=(angle+rotation)%360; cuts.push_back(copy(angle)); }
+cuts.sort();
+let answer:=0;
+for i in 1..cuts.len() { answer=max(answer,cuts[i]-cuts[i-1]); }
+wt answer;

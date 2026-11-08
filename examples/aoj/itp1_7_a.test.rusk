@@ -1,0 +1,21 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_7_A
+// ITP1_7_A - Grading
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_7_A
+// 関数と条件分岐
+fn grade(m:Int,f:Int,r:Int)->Str {
+    if m<0 || f<0 { return "F"; }
+    let total:=m+f;
+    if total>=80 { return "A"; }
+    if total>=65 { return "B"; }
+    if total>=50 { return "C"; }
+    if total>=30 {
+        if r>=50 { return "C"; }
+        return "D";
+    }
+    return "F";
+}
+loop {
+    in m,f,r:Int;
+    if m==-1 && f==-1 && r==-1 { break; }
+    wt grade(m,f,r);
+}

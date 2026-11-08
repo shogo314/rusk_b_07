@@ -1,0 +1,15 @@
+// B - KEYENCE building
+// https://atcoder.jp/contests/abc227/tasks/abc227_b
+// 候補の前計算
+let possible:=[false;1001];
+for a in 1..143 {
+    for b in 1..143 {
+        let area:=4*a*b+3*a+3*b;
+        if area<=1000 { possible[area]=true; }
+    }
+}
+in n:Int;
+in guesses(n):Vec<Int>;
+let wrong:=0;
+for area in guesses { if !possible[area] { wrong+=1; } }
+wt wrong;

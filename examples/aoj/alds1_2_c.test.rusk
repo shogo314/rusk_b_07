@@ -1,0 +1,15 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_2_C
+// Source: https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ALDS1_2_C
+struct Card{suit:Char;value:Int;position:Int;}
+in n:Int;let cards:Vec<Card>:=[];
+for i in 0..n {in s:Str;cards.push_back(Card{suit:s[0],value:Int(s[1])-Int('0'),position:copy(i)});}
+let stable=cards;sort_by_key(stable,(card:Card)=>card.value);
+wt stable.map((card:Card)=>Str(card.suit)+Str(card.value)).to_vec();wt "Stable";
+for i in 0..n {
+    let minimum=i;
+    for j in i..n {if cards[j].value<cards[minimum].value {minimum=j;}}
+    (cards[i],cards[minimum]):=(cards[minimum],cards[i]);
+}
+wt cards.map((card:Card)=>Str(card.suit)+Str(card.value)).to_vec();
+let same:=true;for i in 0..n {if cards[i].position!=stable[i].position {same=false;}}
+if same{wt "Stable";}else{wt "Not stable";}

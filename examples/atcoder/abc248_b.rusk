@@ -1,0 +1,7 @@
+// B - Slimes
+// https://atcoder.jp/contests/abc248/tasks/abc248_b
+// 乗算の反復
+in a,b,k:Int;
+let count:=0;
+while a<b { a*=k; count+=1; }
+wt count;

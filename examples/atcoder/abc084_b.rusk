@@ -1,0 +1,11 @@
+// B - Postal Code
+// https://atcoder.jp/contests/abc084/tasks/abc084_b
+// 文字の検査
+in a,b:Int;
+in s:Str;
+let valid:=true;
+for i in 0..s.len() {
+    if i==a { if s[i]!='-' { valid=false; } }
+    else { if s[i]<'0' || '9'<s[i] { valid=false; } }
+}
+wt valid;

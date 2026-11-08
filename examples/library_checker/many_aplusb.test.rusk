@@ -1,0 +1,5 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/many_aplusb
+// Many A + B
+// 64ビット整数と大量入出力
+in t:Int;
+for i in 0..t { in a,b:Int; wt a+b; }

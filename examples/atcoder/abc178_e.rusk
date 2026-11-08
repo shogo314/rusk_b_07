@@ -1,0 +1,12 @@
+// E - Dist Max
+// https://atcoder.jp/contests/abc178/tasks/abc178_e
+// 座標変換と最大最小
+in n:Int;
+let min_sum:=2000000000; let max_sum:=0;
+let min_diff:=1000000000; let max_diff:=-1000000000;
+for i in 0..n {
+    in x,y:Int;
+    min_sum=min(min_sum,x+y); max_sum=max(max_sum,x+y);
+    min_diff=min(min_diff,x-y); max_diff=max(max_diff,x-y);
+}
+wt max(max_sum-min_sum,max_diff-min_diff);

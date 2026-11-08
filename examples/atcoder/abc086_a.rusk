@@ -1,0 +1,4 @@
+// A - Product
+// https://atcoder.jp/contests/abc086/tasks/abc086_a
+in a,b:Int;
+if a*b%2==0 { wt "Even"; } else { wt "Odd"; }

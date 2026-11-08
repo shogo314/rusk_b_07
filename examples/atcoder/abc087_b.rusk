@@ -1,0 +1,12 @@
+// B - Coins
+// https://atcoder.jp/contests/abc087/tasks/abc087_b
+in a,b,c,x:Int;
+let answer:=0;
+for i in 0..(a+1) {
+    for j in 0..(b+1) {
+        for k in 0..(c+1) {
+            if 500*i+100*j+50*k==x { answer+=1; }
+        }
+    }
+}
+wt answer;

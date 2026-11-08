@@ -1,0 +1,15 @@
+// B - Some Sums
+// https://atcoder.jp/contests/abc083/tasks/abc083_b
+fn digit_sum(n:Int)->Int {
+    let value = n;
+    let total:=0;
+    while value { total+=value%10; value/=10; }
+    return total;
+}
+in n,a,b:Int;
+let answer:=0;
+for i in 1..(n+1) {
+    let digits:=digit_sum(i);
+    if a<=digits && digits<=b { answer+=i; }
+}
+wt answer;

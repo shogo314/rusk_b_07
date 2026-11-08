@@ -1,0 +1,10 @@
+/site/
+/.venv-docs/
+__pycache__/
+/target/
+/a.cpp
+/a.out
+/.venv-verify/
+/.verify-helper/cache/
+/.verify-helper/timestamps.local.json
+/.verify-helper/.gitignore

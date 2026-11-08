@@ -1,0 +1,60 @@
+site_name: Rusk β 07
+site_description: 競技プログラミング向け言語 Rusk β 07 のドキュメント
+site_url: https://shogo314.github.io/rusk_b_07/
+repo_url: https://github.com/shogo314/rusk_b_07
+repo_name: shogo314/rusk_b_07
+edit_uri: edit/main/docs/
+strict: true
+theme:
+  name: material
+  language: ja
+  features:
+    - navigation.sections
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - toc.follow
+nav:
+  - ホーム: index.md
+  - はじめに:
+      - 導入と実行: getting-started/index.md
+      - 小さなプログラムで学ぶ: getting-started/tutorial.md
+      - コマンドライン: getting-started/cli.md
+  - 言語リファレンス:
+      - 基本構文と共有: reference/index.md
+      - 制御構文: reference/control-flow.md
+      - 関数: reference/functions.md
+      - 対応機能と制限: reference/status.md
+      - 文法一覧（EBNF）: reference/grammar.md
+      - 型・共有・評価の規則: reference/semantics.md
+      - 構造体・タプル・型引数・include: reference/beta02.md
+      - ブロック式とラベル付きループ: reference/blocks-labels.md
+      - 最小・最大演算子: reference/minmax.md
+      - パターン分岐・ガード・if let: reference/beta06.md
+      - enumとmatch: reference/enums.md
+      - 分岐式・Option・比較の連鎖: reference/beta05.md
+      - 関数の受け渡しと捕捉: reference/beta04.md
+      - エラーと制限: reference/errors.md
+  - ライブラリ:
+      - 標準ライブラリ: library/index.md
+      - 入出力: library/input-output.md
+      - 配列と文字列: library/sequences.md
+      - 辞書・集合と不在を返す操作: library/beta05.md
+      - Ruskで記述したデータ構造: library/data-structures.md
+      - 関数を使う操作とデータ構造: library/beta04.md
+  - 開発ガイド:
+      - β07の開始点と実装方針: development/beta07.md
+      - β06の実装と検証: development/beta06.md
+      - 変換パイプラインとIR: development/pipeline.md
+      - 開発の進め方: development/index.md
+      - テストの実行: development/verification.md
+      - β02の性能確認: development/beta02-performance.md
+      - β03の高速化と検証: development/beta03.md
+      - enumとOption移行: development/enums.md
+      - β05の実装と検証: development/beta05.md
+      - β04の実装と検証: development/beta04.md
+      - ドキュメントの編集と公開: development/documentation.md
+markdown_extensions:
+  - admonition
+  - fenced_code
+  - tables

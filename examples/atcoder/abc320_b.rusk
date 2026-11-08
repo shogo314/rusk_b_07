@@ -1,0 +1,18 @@
+// B - Longest Palindrome
+// https://atcoder.jp/contests/abc320/tasks/abc320_b
+fn palindrome(s:Str,left:Int,right:Int)->Bool {
+    let l = left; let r = right;
+    while l<r {
+        if s[l]!=s[r] { return false; }
+        l+=1; r-=1;
+    }
+    return true;
+}
+in s:Str;
+let answer:=1;
+for left in 0..s.len() {
+    for right in left..s.len() {
+        if palindrome(s,left,right) { answer=max(answer,right-left+1); }
+    }
+}
+wt answer;

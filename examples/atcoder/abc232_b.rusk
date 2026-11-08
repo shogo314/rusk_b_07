@@ -1,0 +1,8 @@
+// B - Caesar Cipher
+// https://atcoder.jp/contests/abc232/tasks/abc232_b
+// 文字コードと剰余
+in s,t:Str;
+let shift:=(t[0]-s[0])%26;
+let valid:=true;
+for i in 0..s.len() { if (t[i]-s[i])%26!=shift { valid=false; } }
+wt valid;

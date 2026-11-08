@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_3_D
+// ITP1_3_D - How Many Divisors?
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_3_D
+// 全探索
+in a,b,c:Int;
+let count:=0;
+for divisor in a..(b+1) { if c%divisor==0 { count+=1; } }
+wt count;

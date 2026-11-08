@@ -1,0 +1,15 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/point_set_range_composite
+// Source: https://github.com/yosupo06/library-checker-problems/tree/master/data_structure/point_set_range_composite
+include "../beta04/library/segment_tree.rusk";
+struct Affine{a:Int;b:Int;}
+fn compose(f:Affine,g:Affine)->Affine {
+    return Affine{a:g.a*f.a%998244353,b:(g.a*f.b+g.b)%998244353};
+}
+in n,q:Int;let functions:Vec<Affine>:=[];
+for i in 0..n{in a,b:Int;functions.push_back(Affine{a:a,b:b});}
+let seg:=SegTree(functions,Affine{a:1,b:0},compose);
+for i in 0..q {
+    in kind:Int;
+    if kind==0 {in p,a,b:Int;seg.set(p,Affine{a:a,b:b});}
+    else {in l,r,x:Int;let f:=seg.prod(l,r);wt (f.a*x+f.b)%998244353;}
+}

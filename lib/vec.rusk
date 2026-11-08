@@ -1,0 +1,125 @@
+// Private specialization template: identifiers are substituted by the compiler.
+extern fn __vec_new__() -> Vector {
+    cpp_name: "vector_function_0",
+    code: "Obj<NativeVec> vector_function_0([[maybe_unused]] Loc loc) { return make_obj<NativeVec>(NativeVec{}); }",
+}
+extern fn __vec_repeat__(initial: Element, count: Int) -> Vector {
+    cpp_name: "vector_function_1",
+    code: "Obj<NativeVec> vector_function_1(Obj<NativeElement> initial, Obj<std::int64_t> count, [[maybe_unused]] Loc loc) { if(*count<0) fail(loc,\"negative array length\"); auto a=make_obj<NativeVec>(NativeVec{}); if(static_cast<__int128>(*count)>static_cast<__int128>(a->max_size())) fail(loc,\"array length out of range\"); a->reserve(static_cast<std::size_t>(*count)); for(std::int64_t i=0;i<*count;++i) a->push_back(deep_copy(initial,loc)); return a; }",
+}
+extern fn len(a: Vector) -> Int {
+    cpp_name: "vector_function_2",
+    code: "Obj<std::int64_t> vector_function_2(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return make_obj<std::int64_t>(checked_int(static_cast<__int128>(a->size()),loc)); }",
+}
+extern fn push_back(a: Vector, x: Element) {
+    cpp_name: "vector_function_3",
+    code: "void vector_function_3(Obj<NativeVec> a, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { a->push_back(x); ++a->version; }",
+}
+extern fn __getitem__(a: Vector, i: Int) -> Element {
+    cpp_name: "vector_function_4",
+    code: "Obj<NativeElement> vector_function_4(Obj<NativeVec> a, Obj<std::int64_t> i, [[maybe_unused]] Loc loc) { return (*a)[checked_index(a->size(),*i,loc)]; }",
+}
+extern fn __setitem__(a: Vector, i: Int, x: Element) -> Element {
+    cpp_name: "vector_function_5",
+    code: "Obj<NativeElement> vector_function_5(Obj<NativeVec> a, Obj<std::int64_t> i, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { (*a)[checked_index(a->size(),*i,loc)]=x; return x; }",
+}
+extern fn copy(a: Vector) -> Vector {
+    cpp_name: "vector_function_6",
+    code: "Obj<NativeVec> vector_function_6(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return deep_copy(a,loc); }",
+}
+extern fn __assign__(a: Vector, b: Vector) {
+    cpp_name: "vector_function_7",
+    code: "void vector_function_7(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { auto snapshot=deep_copy(b,loc); a->assign(snapshot->begin(),snapshot->end()); ++a->version; }",
+}
+extern fn __bool__(a: Vector) -> Bool {
+    cpp_name: "vector_function_8",
+    code: "Obj<bool> vector_function_8(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return make_obj<bool>(!a->empty()); }",
+}
+extern fn __write__(a: Vector) {
+    cpp_name: "vector_function_9",
+    code: "void vector_function_9(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { write_value(a); }",
+}
+extern fn sort(a: Vector) {
+    cpp_name: "vector_function_10",
+    code: "void vector_function_10(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { std::stable_sort(a->begin(),a->end(),[](const auto& x,const auto& y){return value_less(x,y);}); ++a->version; }",
+}
+extern fn sorted(a: Vector) -> Vector {
+    cpp_name: "vector_function_11",
+    code: "Obj<NativeVec> vector_function_11(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { auto result=make_obj<NativeVec>(*a); std::stable_sort(result->begin(),result->end(),[](const auto& x,const auto& y){return value_less(x,y);}); return result; }",
+}
+extern fn reverse(a: Vector) {
+    cpp_name: "vector_function_12",
+    code: "void vector_function_12(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { std::reverse(a->begin(),a->end()); ++a->version; }",
+}
+extern fn bisect_left(a: Vector, x: Element) -> Int {
+    cpp_name: "vector_function_13",
+    code: "Obj<std::int64_t> vector_function_13(Obj<NativeVec> a, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { auto it=std::lower_bound(a->begin(),a->end(),x,[](const auto& y,const auto& z){return value_less(y,z);}); return make_obj<std::int64_t>(it-a->begin()); }",
+}
+extern fn bisect_right(a: Vector, x: Element) -> Int {
+    cpp_name: "vector_function_14",
+    code: "Obj<std::int64_t> vector_function_14(Obj<NativeVec> a, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { auto it=std::upper_bound(a->begin(),a->end(),x,[](const auto& y,const auto& z){return value_less(y,z);}); return make_obj<std::int64_t>(it-a->begin()); }",
+}
+extern fn contains(a: Vector, x: Element) -> Bool {
+    cpp_name: "vector_function_15",
+    code: "Obj<bool> vector_function_15(Obj<NativeVec> a, Obj<NativeElement> x, [[maybe_unused]] Loc loc) { return make_obj<bool>(std::any_of(a->begin(),a->end(),[&](const auto& y){return value_equal(y,x);})); }",
+}
+extern fn __add__(a: Vector, b: Vector) -> Vector {
+    cpp_name: "vector_function_16",
+    code: "Obj<NativeVec> vector_function_16(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { auto result=make_obj<NativeVec>(*a); result->insert(result->end(),b->begin(),b->end()); return result; }",
+}
+extern fn __iadd__(a: Vector, b: Vector) {
+    cpp_name: "vector_function_17",
+    code: "void vector_function_17(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { auto snapshot=*b; a->insert(a->end(),snapshot.begin(),snapshot.end()); ++a->version; }",
+}
+extern fn __read__(count: Int) -> Vector {
+    cpp_name: "vector_function_18",
+    code: "Obj<NativeVec> vector_function_18(Obj<std::int64_t> count, [[maybe_unused]] Loc loc) { if(*count<0) fail(loc,\"negative array length\"); auto a=make_obj<NativeVec>(NativeVec{}); if(static_cast<__int128>(*count)>static_cast<__int128>(a->max_size())) fail(loc,\"array length out of range\"); a->reserve(static_cast<std::size_t>(*count)); for(std::int64_t i=0;i<*count;++i) a->push_back(read_value<NativeElement>(loc)); return a; }",
+}
+extern fn __iter__(a: Vector) -> Iterator {
+    cpp_name: "vector_function_19",
+    code: "Obj<NativeIterator> vector_function_19(Obj<NativeVec> a, [[maybe_unused]] Loc loc) { return make_obj<NativeIterator>(NativeIterator{a,0,a->version}); }",
+}
+extern fn __iter_has_next__(it: Iterator) -> Bool {
+    cpp_name: "vector_function_20",
+    code: "Obj<bool> vector_function_20(Obj<NativeIterator> it, [[maybe_unused]] Loc loc) { check_iter(it,loc); return make_obj<bool>(it->index<it->owner->size()); }",
+}
+extern fn __iter_next__(it: Iterator) -> Element {
+    cpp_name: "vector_function_21",
+    code: "Obj<NativeElement> vector_function_21(Obj<NativeIterator> it, [[maybe_unused]] Loc loc) { check_iter(it,loc); if(it->index>=it->owner->size()) fail(loc,\"iterator exhausted\"); return (*it->owner)[it->index++]; }",
+}
+extern fn __eq__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_22",
+    code: "Obj<bool> vector_function_22(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(value_equal(a,b)); }",
+}
+extern fn __ne__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_23",
+    code: "Obj<bool> vector_function_23(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(!value_equal(a,b)); }",
+}
+extern fn __lt__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_24",
+    code: "Obj<bool> vector_function_24(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(value_less(a,b)); }",
+}
+extern fn __le__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_25",
+    code: "Obj<bool> vector_function_25(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(!value_less(b,a)); }",
+}
+extern fn __gt__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_26",
+    code: "Obj<bool> vector_function_26(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(value_less(b,a)); }",
+}
+extern fn __ge__(a: Vector, b: Vector) -> Bool {
+    cpp_name: "vector_function_27",
+    code: "Obj<bool> vector_function_27(Obj<NativeVec> a, Obj<NativeVec> b, [[maybe_unused]] Loc loc) { return make_obj<bool>(!value_less(a,b)); }",
+}
+extern fn __not__(a: Vector) -> Bool {
+    cpp_name: "vector_function_999",
+    code: "Obj<bool> vector_function_999(Obj<NativeVec> a, Loc) { return make_obj<bool>(a->empty()); }",
+}
+extern fn Bool(a: Vector) -> Bool {
+    cpp_name: "vector_function_1000",
+    code: "Obj<bool> vector_function_1000(Obj<NativeVec> a, Loc) { return make_obj<bool>(!a->empty()); }",
+}
+extern fn pop_back(a: Vector) -> Element {
+    cpp_name: "vector_function_35",
+    code: "Obj<NativeElement> vector_function_35(Obj<NativeVec> a,Loc loc){ if(a->empty()) fail(loc,\"pop from empty array\"); auto value=a->back();a->pop_back();++a->version;return value; }",
+}

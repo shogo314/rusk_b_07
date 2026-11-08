@@ -1,0 +1,9 @@
+// B - Exponential
+// https://atcoder.jp/contests/abc097/tasks/abc097_b
+in x:Int;
+let answer:=1;
+for base in 2..(x+1) {
+    let power:=base*base;
+    while power<=x { answer=max(answer,power); power*=base; }
+}
+wt answer;

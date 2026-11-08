@@ -1,0 +1,9 @@
+enum Result<T,E> { Ok(T), Err(E), }
+enum Event { Stop, Pair(Int, Vec<Int>), }
+let x:Result<Int,Str>:=Result::Ok(4);
+wt match x { Result::Ok(n)=>n+1, Result::Err(_)=>0, };
+let e:=Event::Pair(2,[3]);
+let held:=match e { Event::Pair(n,row)=>{row[0]+=n;row} Event::Stop=>[], };
+e=Event::Stop;
+wt held;
+let o:=Some([8]);wt match o {Some(row)=>row[0],None=>0,};

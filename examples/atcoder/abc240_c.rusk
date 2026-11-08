@@ -1,0 +1,17 @@
+// C - Jumping Takahashi
+// https://atcoder.jp/contests/abc240/tasks/abc240_c
+in n,x:Int;
+let reachable:=[false;x+1];
+reachable[0]=true;
+for i in 0..n {
+    in a,b:Int;
+    let next:=[false;x+1];
+    for position in 0..(x+1) {
+        if reachable[position] {
+            if position+a<=x { next[position+a]=true; }
+            if position+b<=x { next[position+b]=true; }
+        }
+    }
+    reachable:=next;
+}
+wt reachable[x];

@@ -1,0 +1,7 @@
+// B - 200th ABC-200
+// https://atcoder.jp/contests/abc200/tasks/abc200_b
+in n,k:Int;
+for i in 0..k {
+    if n%200==0 { n/=200; } else { n=n*1000+200; }
+}
+wt n;

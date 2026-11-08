@@ -1,0 +1,12 @@
+// B - Shift only
+// https://atcoder.jp/contests/abc081/tasks/abc081_b
+in n:Int;
+in a(n):Vec<Int>;
+let answer:=64;
+for x in a {
+    let value = x;
+    let count:=0;
+    while value%2==0 { value/=2; count+=1; }
+    answer=min(answer,count);
+}
+wt answer;

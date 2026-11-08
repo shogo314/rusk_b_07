@@ -1,0 +1,15 @@
+// B - Gentle Pairs
+// https://atcoder.jp/contests/abc187/tasks/abc187_b
+// 整数での傾き判定
+in n:Int;
+let points:Vec<Vec<Int>>:=[];
+for i in 0..n { in point(2):Vec<Int>; points.push_back(point); }
+let answer:=0;
+for i in 0..n {
+    for j in (i+1)..n {
+        if abs(points[i][1]-points[j][1])<=abs(points[i][0]-points[j][0]) {
+            answer+=1;
+        }
+    }
+}
+wt answer;

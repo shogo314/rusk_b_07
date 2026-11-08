@@ -1,0 +1,10 @@
+fn gcd(a: Int, b: Int) -> Int {
+    while b {
+        let r := a % b;
+        a := b;
+        b := r;
+    }
+    return a;
+}
+in a, b: Int;
+wt gcd(a, b);

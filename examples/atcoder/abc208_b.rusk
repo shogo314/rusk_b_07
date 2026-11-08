@@ -1,0 +1,9 @@
+// B - Factorial Yen Coin
+// https://atcoder.jp/contests/abc208/tasks/abc208_b
+in p:Int;
+let coins:=[1];
+for i in 2..11 { coins.push_back(coins[-1]*i); }
+coins.reverse();
+let answer:=0;
+for coin in coins { answer+=p/coin; p%=coin; }
+wt answer;

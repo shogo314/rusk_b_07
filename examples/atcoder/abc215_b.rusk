@@ -1,0 +1,7 @@
+// B - log2(N)
+// https://atcoder.jp/contests/abc215/tasks/abc215_b
+// 整数の対数
+in n:Int;
+let exponent:=0;
+while n>=2 { n/=2; exponent+=1; }
+wt exponent;

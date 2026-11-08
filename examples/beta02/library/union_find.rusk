@@ -1,0 +1,36 @@
+struct UnionFind {
+    parents: Vec<Int>;
+}
+
+fn UnionFind(n: Int) -> UnionFind {
+    return UnionFind { parents: [-1; n] };
+}
+
+fn leader(uf: UnionFind, vertex: Int) -> Int {
+    let root = vertex;
+    while uf.parents[root] >= 0 { root = uf.parents[root]; }
+    let current = vertex;
+    while current != root {
+        let next = uf.parents[current];
+        uf.parents[current] = root;
+        current := next;
+    }
+    return root;
+}
+
+fn unite(uf: UnionFind, u: Int, v: Int) {
+    let a := uf.leader(u);
+    let b := uf.leader(v);
+    if a == b { return; }
+    if uf.parents[a] > uf.parents[b] {
+        let held := a;
+        a := b;
+        b := held;
+    }
+    uf.parents[a] += uf.parents[b];
+    uf.parents[b] = a;
+}
+
+fn same(uf: UnionFind, u: Int, v: Int) -> Bool {
+    return uf.leader(u) == uf.leader(v);
+}

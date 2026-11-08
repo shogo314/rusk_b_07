@@ -1,0 +1,16 @@
+// B - Making Triangle
+// https://atcoder.jp/contests/abc175/tasks/abc175_b
+// 三重ループの全探索
+in n:Int;
+in lengths(n):Vec<Int>;
+lengths.sort();
+let answer:=0;
+for i in 0..n {
+    for j in (i+1)..n {
+        for k in (j+1)..n {
+            if lengths[i]!=lengths[j] && lengths[j]!=lengths[k]
+                && lengths[k]<lengths[i]+lengths[j] { answer+=1; }
+        }
+    }
+}
+wt answer;

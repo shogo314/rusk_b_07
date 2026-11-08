@@ -1,0 +1,6 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_C
+// ITP1_1_C - Rectangle
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_1_C
+// 整数演算
+in a,b:Int;
+wt a*b,2*(a+b);

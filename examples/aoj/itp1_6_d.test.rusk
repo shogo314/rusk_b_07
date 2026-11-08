@@ -1,0 +1,13 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_6_D
+// ITP1_6_D - Matrix Vector Multiplication
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_6_D
+// 多次元配列
+in n,m:Int;
+let matrix:Vec<Vec<Int>>:=[];
+for i in 0..n { in row(m):Vec<Int>; matrix.push_back(row); }
+in vector(m):Vec<Int>;
+for row in matrix {
+    let total:=0;
+    for j in 0..m { total+=row[j]*vector[j]; }
+    wt total;
+}

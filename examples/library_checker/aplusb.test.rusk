@@ -1,0 +1,5 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/aplusb
+// A + B
+// 整数入出力
+in a,b:Int;
+wt a+b;

@@ -1,0 +1,8 @@
+// B - Ancestor
+// https://atcoder.jp/contests/abc263/tasks/abc263_b
+// 親の走査
+in n:Int;
+in parents(n-1):Vec<Int>;
+let current = n; let generations:=0;
+while current>1 { current:=parents[current-2]; generations+=1; }
+wt generations;

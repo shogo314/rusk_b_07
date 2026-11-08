@@ -1,0 +1,8 @@
+// B - Maximum Sum
+// https://atcoder.jp/contests/abc096/tasks/abc096_b
+// 貪欲法
+in a,b,c,k:Int;
+let largest:=max(a,max(b,c));
+let doubled = largest;
+for i in 0..k { doubled*=2; }
+wt a+b+c-largest+doubled;

@@ -1,0 +1,22 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/staticrmq
+// Static RMQ
+// セグメント木
+in n,q:Int;
+in a(n):Vec<Int>;
+let size:=1;
+while size<n { size*=2; }
+let tree:=[1000000001;2*size];
+for i in 0..n { tree[size+i]=a[i]; }
+let index:=size-1;
+while index>0 { tree[index]=min(tree[2*index],tree[2*index+1]); index-=1; }
+for query in 0..q {
+    in l,r:Int;
+    l+=size; r+=size;
+    let answer:=1000000001;
+    while l<r {
+        if l%2==1 { answer=min(answer,tree[l]); l+=1; }
+        if r%2==1 { r-=1; answer=min(answer,tree[r]); }
+        l/=2; r/=2;
+    }
+    wt answer;
+}

@@ -1,0 +1,189 @@
+{
+  "method": "7 alternating-order runs; median elapsed process time; allocation and reference-copy instrumentation executed separately from timing",
+  "compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "flags": [
+    "-std=c++20",
+    "-O2"
+  ],
+  "architecture": "x86_64",
+  "sources": {
+    "find": "let a := [1; 100000];\nlet total := 0;\nfor i in 0..20 { total += a.find(2) ?? -1; }\nwt total;\n",
+    "sum": "let a := [1; 1000000];\nlet total := 0;\nfor i in 0..20 { total += a.sum(); }\nwt total;\n"
+  },
+  "caveats": [
+    "Includes process startup and array construction.",
+    "Borrow and removed-check variants are experiments for these Int workloads, not general compiler transformations.",
+    "Counts instrument operator new or libstdc++ _M_add_ref_copy and may affect optimizer decisions; timing uses uninstrumented programs."
+  ],
+  "generated_cpp_sha256": {
+    "rusk-find-before.cpp": "c7e1e6ba497ca2b666962c1e5bc69f16f86a9fcd572a5701e13d22ef95c7ddda",
+    "rusk-find-after.cpp": "98314112e6ed7135995a452bcf284423ea48efb0865eb2e69daa9ad2cd58f541",
+    "rusk-stdlib-before.cpp": "5d9c5f8dd56b11611b0bdf6840300e2c489e7d2b45cb0c7a14e928df585e7998",
+    "rusk-stdlib-after.cpp": "9df2288f50ef620bdba80e957966cfd1cd53d1d2418c41a40297706fedf7c593"
+  },
+  "results": {
+    "find-native": {
+      "allocations": 2100115,
+      "output": "-20",
+      "median_ms": 21.806,
+      "runs_ms": [
+        21.615,
+        21.549,
+        21.386,
+        22.46,
+        23.45,
+        21.806,
+        23.598
+      ],
+      "shared_ptr_copies": 6000128
+    },
+    "find-rusk": {
+      "allocations": 2100155,
+      "output": "-20",
+      "median_ms": 63.468,
+      "runs_ms": [
+        63.468,
+        63.731,
+        63.754,
+        64.354,
+        63.435,
+        63.075,
+        62.979
+      ],
+      "shared_ptr_copies": 22000308
+    },
+    "find-inline-bool": {
+      "allocations": 100155,
+      "output": "-20",
+      "median_ms": 48.074,
+      "runs_ms": [
+        48.023,
+        47.89,
+        48.263,
+        49.067,
+        47.486,
+        48.684,
+        48.074
+      ],
+      "shared_ptr_copies": 18000308
+    },
+    "find-borrow-aliases": {
+      "allocations": 2100155,
+      "output": "-20",
+      "median_ms": 37.118,
+      "runs_ms": [
+        37.442,
+        39.018,
+        38.355,
+        36.494,
+        36.527,
+        36.665,
+        37.118
+      ],
+      "shared_ptr_copies": 6000288
+    },
+    "find-no-version-checks": {
+      "allocations": 2100155,
+      "output": "-20",
+      "median_ms": 63.433,
+      "runs_ms": [
+        63.594,
+        63.433,
+        63.63,
+        62.518,
+        63.355,
+        63.81,
+        63.138
+      ]
+    },
+    "find-inline-and-borrow": {
+      "allocations": 100155,
+      "output": "-20",
+      "median_ms": 21.898,
+      "runs_ms": [
+        21.931,
+        21.561,
+        21.898,
+        21.287,
+        22.508,
+        21.671,
+        23.207
+      ],
+      "shared_ptr_copies": 4000288
+    },
+    "sum-native": {
+      "allocations": 1000055,
+      "output": "20000000",
+      "median_ms": 47.535,
+      "runs_ms": [
+        47.307,
+        47.535,
+        47.124,
+        48.357,
+        51.03,
+        47.591,
+        47.248
+      ],
+      "shared_ptr_copies": 88
+    },
+    "sum-rusk": {
+      "allocations": 1000095,
+      "output": "20000000",
+      "median_ms": 323.635,
+      "runs_ms": [
+        323.635,
+        322.964,
+        322.591,
+        326.382,
+        320.231,
+        332.9,
+        332.125
+      ],
+      "shared_ptr_copies": 100000368
+    },
+    "sum-borrow-aliases": {
+      "allocations": 1000095,
+      "output": "20000000",
+      "median_ms": 198.384,
+      "runs_ms": [
+        196.886,
+        200.415,
+        197.738,
+        198.399,
+        201.121,
+        198.384,
+        197.816
+      ],
+      "shared_ptr_copies": 40000368
+    },
+    "sum-no-version-checks": {
+      "allocations": 1000095,
+      "output": "20000000",
+      "median_ms": 320.736,
+      "runs_ms": [
+        325.967,
+        334.792,
+        320.736,
+        323.873,
+        319.01,
+        320.714,
+        319.543
+      ]
+    },
+    "sum-borrow-elements": {
+      "allocations": 1000095,
+      "output": "20000000",
+      "median_ms": 59.896,
+      "runs_ms": [
+        58.736,
+        60.027,
+        60.103,
+        58.763,
+        60.644,
+        59.896,
+        58.258
+      ],
+      "shared_ptr_copies": 368
+    }
+  }
+}

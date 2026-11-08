@@ -1,0 +1,9 @@
+// B - Permutation Check
+// https://atcoder.jp/contests/abc205/tasks/abc205_b
+// ソートと比較
+in n:Int;
+in a(n):Vec<Int>;
+a.sort();
+let valid:=true;
+for i in 0..n { if a[i]!=i+1 { valid=false; } }
+wt valid;

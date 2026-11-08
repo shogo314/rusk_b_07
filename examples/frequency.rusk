@@ -1,0 +1,10 @@
+// Read N values in [0, K), then print the frequency of each value.
+in n, k: Int;
+let counts := [0; k];
+let i := 0;
+while i < n {
+    in x: Int;
+    counts[x] += 1;
+    i += 1;
+}
+wt counts;

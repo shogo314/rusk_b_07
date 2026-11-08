@@ -1,0 +1,9 @@
+// B - Magic 3
+// https://atcoder.jp/contests/abc190/tasks/abc190_b
+in n,s,d:Int;
+let possible:=false;
+for i in 0..n {
+    in x,y:Int;
+    if x<s && y>d { possible=true; }
+}
+wt possible;

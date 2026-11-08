@@ -1,0 +1,15 @@
+// B - Glass and Mug
+// https://atcoder.jp/contests/abc332/tasks/abc332_b
+in k,g,m:Int;
+let glass:=0; let mug:=0;
+for i in 0..k {
+    if glass==g { glass=0; }
+    else {
+        if mug==0 { mug=m; }
+        else {
+            let transfer:=min(g-glass,mug);
+            glass+=transfer; mug-=transfer;
+        }
+    }
+}
+wt glass,mug;

@@ -1,0 +1,8 @@
+// B - Remove It
+// https://atcoder.jp/contests/abc191/tasks/abc191_b
+// 配列の抽出
+in n,x:Int;
+in a(n):Vec<Int>;
+let answer:Vec<Int>:=[];
+for value in a { if value!=x { answer.push_back(value); } }
+wt answer;

@@ -1,0 +1,13 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_A
+// DPL_1_A - Coin Changing Problem
+// https://onlinejudge.u-aizu.ac.jp/problems/DPL_1_A
+// 最小枚数DP
+in n,m:Int;
+in coins(m):Vec<Int>;
+let counts:=[n+1;n+1]; counts[0]=0;
+for amount in 1..(n+1) {
+    for coin in coins {
+        if coin<=amount { counts[amount]<?=counts[amount-coin]+1; }
+    }
+}
+wt counts[n];

@@ -1,0 +1,33 @@
+// Shortest 4-neighbour path from top-left to bottom-right.
+// Input: H W, then H ASCII rows ('.' = open, '#' = wall).
+// H,W >= 1. Output -1 when unreachable.
+fn shortest_path(grid: Vec<Str>, h: Int, w: Int) -> Int {
+    if grid[0][0] == '#' || grid[h-1][w-1] == '#' { return -1; }
+    let distance := [[-1; w]; h];
+    let queue_r := [0];
+    let queue_c := [0];
+    let head := 0;
+    distance[0][0] = 0;
+    let directions := [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while head < queue_r.len() {
+        let r := queue_r[head];
+        let c := queue_c[head];
+        head += 1;
+        for d in directions {
+            let nr := r + d[0];
+            let nc := c + d[1];
+            if 0 <= nr && nr < h && 0 <= nc && nc < w {
+                if grid[nr][nc] != '#' && distance[nr][nc] < 0 {
+                    distance[nr][nc] = distance[r][c] + 1;
+                    queue_r.push_back(nr);
+                    queue_c.push_back(nc);
+                }
+            }
+        }
+    }
+    return distance[h-1][w-1];
+}
+in h, w: Int;
+let grid: Vec<Str> := [];
+for r in 0..h { in row: Str; grid.push_back(row); }
+wt shortest_path(grid, h, w);

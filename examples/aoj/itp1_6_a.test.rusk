@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_6_A
+// ITP1_6_A - Reversing Numbers
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_6_A
+// 反転
+in n:Int;
+in values(n):Vec<Int>;
+values.reverse();
+wt values;

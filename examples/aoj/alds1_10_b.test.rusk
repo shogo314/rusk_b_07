@@ -1,0 +1,24 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_B
+// ALDS1_10_B - Matrix Chain Multiplication
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_B
+// 区間DP
+in n:Int;
+let dimensions:Vec<Int>:=[];
+for i in 0..n {
+    in r,c:Int;
+    if i==0 { dimensions.push_back(r); }
+    dimensions.push_back(c);
+}
+let costs:=[[0;n+1];n+1];
+for length in 2..(n+1) {
+    for left in 0..(n-length+1) {
+        let right:=left+length;
+        costs[left][right]=1000000000;
+        for middle in (left+1)..right {
+            costs[left][right]=min(costs[left][right],
+                costs[left][middle]+costs[middle][right]
+                +dimensions[left]*dimensions[middle]*dimensions[right]);
+        }
+    }
+}
+wt costs[0][n];

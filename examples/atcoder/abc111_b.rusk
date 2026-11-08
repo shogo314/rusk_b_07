@@ -1,0 +1,5 @@
+// B - AtCoder Beginner Contest 111
+// https://atcoder.jp/contests/abc111/tasks/abc111_b
+// 整数の切り上げ
+in n:Int;
+wt (n+110)/111*111;

@@ -1,0 +1,13 @@
+// E - Logs
+// https://atcoder.jp/contests/abc174/tasks/abc174_e
+// 答えの二分探索
+in n,k:Int;
+in lengths(n):Vec<Int>;
+let low:=0; let high:=1000000000;
+while high-low>1 {
+    let middle:=(low+high)/2;
+    let cuts:=0;
+    for length in lengths { cuts+=(length-1)/middle; }
+    if cuts<=k { high:=middle; } else { low:=middle; }
+}
+wt high;

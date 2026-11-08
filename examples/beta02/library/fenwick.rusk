@@ -1,0 +1,45 @@
+// A commutative additive group: independent + and - results, with an explicit zero.
+struct Fenwick<T> {
+    tree: Vec<T>;
+    zero: T;
+}
+
+fn Fenwick<T>(n: Int, zero: T) -> Fenwick<T> {
+    assert(n >= 0);
+    return Fenwick::<T> { tree: [zero; n+1], zero: copy(zero) };
+}
+
+fn add<T>(fw: Fenwick<T>, position: Int, delta: T) {
+    assert(0 <= position && position+1 < fw.tree.len());
+    let index := position+1;
+    while index < fw.tree.len() {
+        fw.tree[index] += delta;
+        index += index & -index;
+    }
+}
+
+fn prefix_sum<T>(fw: Fenwick<T>, end: Int) -> T {
+    assert(0 <= end && end < fw.tree.len());
+    let total = fw.zero;
+    let index = end;
+    while index > 0 {
+        total += fw.tree[index];
+        index -= index & -index;
+    }
+    return total;
+}
+
+fn range_sum<T>(fw: Fenwick<T>, left: Int, right: Int) -> T {
+    assert(0 <= left && left <= right && right < fw.tree.len());
+    return fw.prefix_sum(right) - fw.prefix_sum(left);
+}
+
+fn Fenwick<T>(values: Vec<T>, zero: T) -> Fenwick<T> {
+    let fw := Fenwick(values.len(), zero);
+    for i in 0..values.len() { fw.tree[i+1] = values[i]; }
+    for index in 1..fw.tree.len() {
+        let parent := index + (index & -index);
+        if parent < fw.tree.len() { fw.tree[parent] += fw.tree[index]; }
+    }
+    return fw;
+}

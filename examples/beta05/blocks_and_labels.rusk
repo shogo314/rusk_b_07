@@ -1,0 +1,22 @@
+fn first(flag:Bool)->Char {
+    return {
+        let text:="abc";
+        if flag {text[0]} else {let c:=text[1];c}
+    };
+}
+wt first(true),first(false);
+
+let text:="abc";
+outer: for i in 0..5 {
+    let value:={
+        let c:=text[0];
+        if i==0 {continue outer;}
+        if i==2 {break outer;}
+        c
+    };
+    value='Z';
+}
+text.push_back('!');wt text;
+
+let callback:={let state:=0;()=>{state+=1;state}};
+wt callback(),callback();

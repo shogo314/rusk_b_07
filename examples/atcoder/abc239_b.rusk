@@ -1,0 +1,5 @@
+// B - Integer Division
+// https://atcoder.jp/contests/abc239/tasks/abc239_b
+// 負数の整数除算
+in x:Int;
+wt x/10;

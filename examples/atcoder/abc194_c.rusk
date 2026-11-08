@@ -1,0 +1,12 @@
+// C - Squared Error
+// https://atcoder.jp/contests/abc194/tasks/abc194_c
+// 累積和と平方和
+in n:Int;
+in a(n):Vec<Int>;
+let total:=0; let squares:=0; let answer:=0;
+for i in 0..n {
+    let x:=a[i];
+    answer+=i*x*x-2*x*total+squares;
+    total+=x; squares+=x*x;
+}
+wt answer;

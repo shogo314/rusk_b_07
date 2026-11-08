@@ -1,0 +1,8 @@
+// C - management
+// https://atcoder.jp/contests/abc163/tasks/abc163_c
+// 頻度配列
+in n:Int;
+in managers(n-1):Vec<Int>;
+let reports:=[0;n];
+for manager in managers { reports[manager-1]+=1; }
+for count in reports { wt count; }

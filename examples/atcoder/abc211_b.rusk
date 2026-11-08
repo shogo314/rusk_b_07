@@ -1,0 +1,6 @@
+// B - Cycle Hit
+// https://atcoder.jp/contests/abc211/tasks/abc211_b
+// 配列の検索
+in hits(4):Vec<Str>;
+wt hits.contains("H") && hits.contains("2B")
+    && hits.contains("3B") && hits.contains("HR");

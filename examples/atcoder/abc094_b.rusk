@@ -1,0 +1,7 @@
+// B - Toll Gates
+// https://atcoder.jp/contests/abc094/tasks/abc094_b
+// 二分探索
+in n,m,x:Int;
+in gates(m):Vec<Int>;
+let left:=gates.bisect_left(x);
+wt min(left,m-left);

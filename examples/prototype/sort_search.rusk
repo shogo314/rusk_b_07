@@ -1,0 +1,9 @@
+// Input: N Q, N integers, Q query values.
+// For each query x, output the number of array elements <= x.
+in n, q: Int;
+in a(n): Vec<Int>;
+a.sort();
+for i in 0..q {
+    in x: Int;
+    wt a.bisect_right(x);
+}

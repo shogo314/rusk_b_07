@@ -1,0 +1,15 @@
+// C - Cream puff
+// https://atcoder.jp/contests/abc180/tasks/abc180_c
+// 約数列挙
+in n:Int;
+let divisors:Vec<Int>:=[];
+let d:=1;
+while d*d<=n {
+    if n%d==0 {
+        divisors.push_back(copy(d));
+        if d*d!=n { divisors.push_back(n/d); }
+    }
+    d+=1;
+}
+divisors.sort();
+for divisor in divisors { wt divisor; }

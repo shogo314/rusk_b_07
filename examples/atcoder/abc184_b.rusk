@@ -1,0 +1,9 @@
+// B - Quizzes
+// https://atcoder.jp/contests/abc184/tasks/abc184_b
+// シミュレーション
+in n,x:Int;
+in s:Str;
+for i in 0..n {
+    if s[i]=='o' { x+=1; } else { x=max(0,x-1); }
+}
+wt x;

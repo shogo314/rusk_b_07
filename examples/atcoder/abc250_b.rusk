@@ -1,0 +1,12 @@
+// B - Enlarged Checker Board
+// https://atcoder.jp/contests/abc250/tasks/abc250_b
+// グリッドの生成
+in n,a,b:Int;
+for r in 0..(n*a) {
+    let line:="";
+    for c in 0..(n*b) {
+        if (r/a+c/b)%2==0 { line.push_back('.'); }
+        else { line.push_back('#'); }
+    }
+    wt line;
+}

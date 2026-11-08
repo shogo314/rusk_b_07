@@ -1,0 +1,15 @@
+fn select(flag:Bool)->Char{
+    let text:="abc";
+    for i in 0..3{{let c:=text[i];if flag&&i==1{return c;}if i==0{continue;}break;}}
+    return text[2];
+}
+wt select(true),select(false);
+let text:="ab";
+for i in 0..5{{let held:=text[0];if i==0{continue;}break;}}
+text.push_back('!');wt text;
+let counter:=0;
+while (counter+=1)<4{{let held:=text[0];if counter==1{continue;}if counter==2{break;}}}else{wt "unexpected";}
+text.push_back('?');wt text,counter;
+let total:=0;
+for i in 0..3{for j in 0..3{total+=1;break;}}else{total+=10;}
+wt total;

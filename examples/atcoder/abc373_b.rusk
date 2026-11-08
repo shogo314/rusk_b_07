@@ -1,0 +1,8 @@
+// B - 1D Keyboard
+// https://atcoder.jp/contests/abc373/tasks/abc373_b
+in s:Str;
+let position:=[0;26];
+for i in 0..26 { position[s[i]-'A']=i; }
+let answer:=0;
+for i in 1..26 { answer+=abs(position[i]-position[i-1]); }
+wt answer;

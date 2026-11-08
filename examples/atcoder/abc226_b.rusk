@@ -1,0 +1,10 @@
+// B - Counting Arrays
+// https://atcoder.jp/contests/abc226/tasks/abc226_b
+// 配列のソートと重複除去
+in n:Int;
+let sequences:Vec<Vec<Int>>:=[];
+for i in 0..n { in length:Int; in row(length):Vec<Int>; sequences.push_back(row); }
+sequences.sort();
+let distinct:=1;
+for i in 1..n { if sequences[i]!=sequences[i-1] { distinct+=1; } }
+wt distinct;

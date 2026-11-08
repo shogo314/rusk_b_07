@@ -1,0 +1,13 @@
+// B - Pasta
+// https://atcoder.jp/contests/abc241/tasks/abc241_b
+// ソートと二つのポインター
+in n,m:Int;
+in a(n),b(m):Vec<Int>;
+a.sort(); b.sort();
+let position:=0; let possible:=true;
+for wanted in b {
+    while position<n && a[position]<wanted { position+=1; }
+    if position==n || a[position]!=wanted { possible=false; break; }
+    position+=1;
+}
+wt possible;

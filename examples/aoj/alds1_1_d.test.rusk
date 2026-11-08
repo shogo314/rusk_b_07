@@ -1,0 +1,12 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_D
+// ALDS1_1_D - Maximum Profit
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_1_D
+// 最小値の走査
+in n:Int;
+in prices(n):Vec<Int>;
+let cheapest = prices[0]; let profit:=prices[1]-prices[0];
+for i in 1..n {
+    profit>?=prices[i]-cheapest;
+    cheapest<?=prices[i];
+}
+wt profit;

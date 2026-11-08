@@ -1,0 +1,12 @@
+// B - 1D Pawn
+// https://atcoder.jp/contests/abc257/tasks/abc257_b
+// 隣接する駒のシミュレーション
+in n,k,q:Int;
+in positions(k),moves(q):Vec<Int>;
+for move in moves {
+    let index:=move-1;
+    if positions[index]==n { continue; }
+    if index+1<k && positions[index]+1==positions[index+1] { continue; }
+    positions[index]+=1;
+}
+wt positions;

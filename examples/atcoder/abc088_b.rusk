@@ -1,0 +1,10 @@
+// B - Card Game for Two
+// https://atcoder.jp/contests/abc088/tasks/abc088_b
+in n:Int;
+in a(n):Vec<Int>;
+a.sort(); a.reverse();
+let answer:=0;
+for i in 0..n {
+    if i%2==0 { answer+=a[i]; } else { answer-=a[i]; }
+}
+wt answer;

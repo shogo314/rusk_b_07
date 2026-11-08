@@ -1,0 +1,4 @@
+// A - Buying Sweets
+// https://atcoder.jp/contests/abc087/tasks/abc087_a
+in x,a,b:Int;
+wt (x-a)%b;

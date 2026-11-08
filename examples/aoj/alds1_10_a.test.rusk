@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_A
+// ALDS1_10_A - Fibonacci Number
+// https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_10_A
+// 漸化式
+in n:Int;
+let values:=[1,1];
+for i in 2..(n+1) { values.push_back(values[i-1]+values[i-2]); }
+wt values[n];

@@ -1,0 +1,12 @@
+// B - A Reverse
+// https://atcoder.jp/contests/abc233/tasks/abc233_b
+// 両端からの交換
+in l,r:Int;
+in s:Str;
+l-=1; r-=1;
+while l<r {
+    let held = s[l];
+    s[l]=s[r]; s[r]=held;
+    l+=1; r-=1;
+}
+wt s;

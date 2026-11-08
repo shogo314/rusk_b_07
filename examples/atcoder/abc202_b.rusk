@@ -1,0 +1,12 @@
+// B - 180°
+// https://atcoder.jp/contests/abc202/tasks/abc202_b
+// 文字列の変換
+in s:Str;
+let answer:="";
+for i in 0..s.len() {
+    let c = s[-1-i];
+    if c=='6' { c='9'; }
+    else { if c=='9' { c='6'; } }
+    answer.push_back(c);
+}
+wt answer;

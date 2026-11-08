@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ALDS1_4_C
+in n:Int;
+let words:=Set::<Str>();
+for i in 0..n {
+    in command,word:Str;
+    if command=="insert" {words.insert(word);}
+    else {wt if words.contains(word){"yes"}else{"no"};}
+}

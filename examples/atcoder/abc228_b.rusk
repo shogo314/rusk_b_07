@@ -1,0 +1,12 @@
+// B - Takahashi's Secret
+// https://atcoder.jp/contests/abc228/tasks/abc228_b
+// 訪問済み配列
+in n,x:Int;
+in next(n):Vec<Int>;
+let visited:=[false;n];
+let current:=x-1; let count:=0;
+while !visited[current] {
+    visited[current]=true; count+=1;
+    current:=next[current]-1;
+}
+wt count;

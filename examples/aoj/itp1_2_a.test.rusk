@@ -1,0 +1,7 @@
+// verification-helper: PROBLEM https://onlinejudge.u-aizu.ac.jp/problems/ITP1_2_A
+// ITP1_2_A - Small, Large, or Equal
+// https://onlinejudge.u-aizu.ac.jp/problems/ITP1_2_A
+// 条件分岐
+in a,b:Int;
+if a<b { wt "a < b"; }
+else { if a>b { wt "a > b"; } else { wt "a == b"; } }

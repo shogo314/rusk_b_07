@@ -1,0 +1,18 @@
+// Read N integers, store them, and print them in reverse order.
+in n: Int;
+let a: Vec<Int> := [];
+let i := 0;
+while i < n {
+    in x: Int;
+    push_back(a, x);
+    i += 1;
+}
+i := 0;
+while i < len(a) / 2 {
+    let j := len(a) - 1 - i;
+    let saved := a[i];
+    a[i] := a[j];
+    a[j] := saved;
+    i += 1;
+}
+wt a;

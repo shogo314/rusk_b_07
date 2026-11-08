@@ -1,0 +1,16 @@
+// B - V
+// https://atcoder.jp/contests/abc289/tasks/abc289_b
+in n,m:Int;
+in a(m):Vec<Int>;
+let linked:=[false;n+1];
+for x in a { linked[x]=true; }
+let answer:Vec<Int>:=[];
+let start:=1;
+while start<=n {
+    let end = start;
+    while end<n && linked[end] { end+=1; }
+    let current = end;
+    while current>=start { answer.push_back(copy(current)); current-=1; }
+    start=end+1;
+}
+wt answer;

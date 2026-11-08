@@ -1,0 +1,7 @@
+// C - A x B + C
+// https://atcoder.jp/contests/abc179/tasks/abc179_c
+// 商による数え上げ
+in n:Int;
+let answer:=0;
+for a in 1..n { answer+=(n-1)/a; }
+wt answer;

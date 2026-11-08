@@ -1,0 +1,8 @@
+// B - Kagami Mochi
+// https://atcoder.jp/contests/abc085/tasks/abc085_b
+in n:Int;
+in d(n):Vec<Int>;
+d.sort();
+let answer:=1;
+for i in 1..n { if d[i]!=d[i-1] { answer+=1; } }
+wt answer;

@@ -1,0 +1,8 @@
+// verification-helper: PROBLEM https://judge.yosupo.jp/problem/static_range_sum
+// Static Range Sum
+// 累積和
+in n,q:Int;
+in a(n):Vec<Int>;
+let prefix:=[0];
+for value in a { prefix.push_back(prefix[-1]+value); }
+for i in 0..q { in l,r:Int; wt prefix[r]-prefix[l]; }

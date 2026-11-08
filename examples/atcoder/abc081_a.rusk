@@ -1,0 +1,6 @@
+// A - Placing Marbles
+// https://atcoder.jp/contests/abc081/tasks/abc081_a
+in s:Str;
+let count:=0;
+for i in 0..s.len() { if s[i]=='1' { count+=1; } }
+wt count;

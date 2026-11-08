@@ -1,0 +1,11 @@
+// B - How many?
+// https://atcoder.jp/contests/abc214/tasks/abc214_b
+// 三重ループの全探索
+in s,t:Int;
+let answer:=0;
+for a in 0..(s+1) {
+    for b in 0..(s-a+1) {
+        for c in 0..(s-a-b+1) { if a*b*c<=t { answer+=1; } }
+    }
+}
+wt answer;

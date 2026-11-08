@@ -1,0 +1,15 @@
+// B - Cut and Count
+// https://atcoder.jp/contests/abc098/tasks/abc098_b
+// 文字の頻度配列
+in n:Int;
+in s:Str;
+let answer:=0;
+for split in 1..n {
+    let left:=[false;26]; let right:=[false;26];
+    for i in 0..split { left[s[i]-'a']=true; }
+    for i in split..n { right[s[i]-'a']=true; }
+    let common:=0;
+    for i in 0..26 { if left[i] && right[i] { common+=1; } }
+    answer=max(answer,common);
+}
+wt answer;
