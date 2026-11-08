@@ -325,7 +325,9 @@ fn operation(
                 )?;
             }
         }
-        Operation::Release(_) | Operation::AnnotateBinding { .. } => {}
+        Operation::Release(_)
+        | Operation::AnnotateBinding { .. }
+        | Operation::AnnotateEscape { .. } => {}
     }
     Ok(())
 }

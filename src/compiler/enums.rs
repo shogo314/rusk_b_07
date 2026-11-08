@@ -310,7 +310,7 @@ impl Compiler {
                 }
             )
         };
-        self.cached_native(
+        let function = self.cached_native(
             name,
             vec![first.ty.clone()],
             &result,
@@ -320,8 +320,20 @@ impl Compiler {
                 )
             },
             span,
+        )?;
+        let contract = crate::native_effects::contract(
+            if name == "value" {
+                "option_value"
+            } else {
+                "read_fresh"
+            },
+            std::slice::from_ref(&first.ty),
+            &result,
+            &self.ir_types(),
         )
-        .map(Some)
+        .map_err(|error| span.error(error))?;
+        self.native_contracts.insert(function, contract);
+        Ok(Some(function))
     }
     pub(super) fn prepare_enum_copies(&mut self) -> Result<(), String> {
         let todo = self

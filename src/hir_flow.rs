@@ -16,7 +16,7 @@ fn prune(body: &mut Body) -> bool {
             return false;
         }
         exits = match op {
-            Instruction::Return(_)
+            Instruction::Return { .. }
             | Instruction::Break(_)
             | Instruction::Continue(_)
             | Instruction::Unreachable => true,

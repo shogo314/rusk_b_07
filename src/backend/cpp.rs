@@ -148,7 +148,9 @@ pub(crate) fn emit(
                 Instruction::StoreBool { target, value } => {
                     out += &format!("*{}=*{};\n", target.id, value.id)
                 }
-                Instruction::AnnotateBinding { .. } | Instruction::AnnotateAccess { .. } => {}
+                Instruction::AnnotateBinding { .. }
+                | Instruction::AnnotateAccess { .. }
+                | Instruction::AnnotateEscape { .. } => {}
                 Instruction::Release(values) => out += &release(values),
                 Instruction::Call(call) => {
                     let info = &functions[call.function];
@@ -204,7 +206,7 @@ pub(crate) fn emit(
                     condition.id, yes.0, no.0
                 )
             }
-            Terminator::Return { value, cleanup } => {
+            Terminator::Return { value, cleanup, .. } => {
                 if let Some(value) = value {
                     out += &format!(
                         "{{Obj<{}> rusk_return={};\n{}return rusk_return;}}\n",

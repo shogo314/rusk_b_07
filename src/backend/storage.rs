@@ -52,7 +52,9 @@ pub(super) fn persistent(function: &Function) -> BTreeSet<ValueId> {
                     add(&target.id);
                     add(&value.id);
                 }
-                Operation::AnnotateBinding { .. } | Operation::AnnotateAccess { .. } => {}
+                Operation::AnnotateBinding { .. }
+                | Operation::AnnotateAccess { .. }
+                | Operation::AnnotateEscape { .. } => {}
                 Operation::Release(ids) => {
                     for id in ids {
                         add(id);
@@ -62,7 +64,7 @@ pub(super) fn persistent(function: &Function) -> BTreeSet<ValueId> {
         }
         match &block.terminator {
             Terminator::Branch { condition, .. } => add(&condition.id),
-            Terminator::Return { value, cleanup } => {
+            Terminator::Return { value, cleanup, .. } => {
                 if let Some(v) = value {
                     add(&v.id);
                 }

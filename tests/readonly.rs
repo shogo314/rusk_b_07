@@ -73,6 +73,8 @@ fn root_aliases_elements_fields_payloads_and_mutable_annotations_cannot_erase_re
         "readonly let pair:=(1,2);pair[0]:=3;",
         "readonly let pair:=(1,2);let (a,b):=pair;a=3;",
         "readonly let value:=Some(1);if let Some(x)=value{x=2;}",
+        "readonly let x:=1;let option:=Some(x);option?! = 2;",
+        "fn unbox(readonly value:Option<Int>)->Int{return value?!;}let x:=unbox(Some(1));x=2;",
         "readonly let x:Int;x:=1;x=2;",
         "readonly let x:=1;x:=2;x=3;",
     ] {

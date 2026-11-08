@@ -7,6 +7,7 @@ struct Check<'a> {
     loops: BTreeSet<LoopId>,
     bindings: BTreeSet<ValueId>,
     access_bindings: BTreeSet<ValueId>,
+    escape_parameters: BTreeSet<usize>,
     result: &'a str,
     caller_location: bool,
 }
@@ -174,6 +175,13 @@ impl Check<'_> {
                     };
                     self.same(ty, &value.ty)?;
                 }
+                Instruction::AnnotateEscape { parameter, .. } => {
+                    if !self.values.contains_key(&ValueId::Parameter(*parameter))
+                        || !self.escape_parameters.insert(*parameter)
+                    {
+                        return Err("invalid or duplicate IR escape annotation".into());
+                    }
+                }
                 Instruction::AnnotateAccess { value, .. } => {
                     self.value(value)?;
                     if !matches!(value.id, ValueId::Local(_))
@@ -224,7 +232,7 @@ impl Check<'_> {
                     }
                 }
                 Instruction::Unreachable => {}
-                Instruction::Return(value) => {
+                Instruction::Return { value, .. } => {
                     if let Some(value) = value {
                         self.value(value)?;
                         self.same(&value.ty, self.result)?;
@@ -245,6 +253,7 @@ impl Program {
             loops: BTreeSet::new(),
             bindings: BTreeSet::new(),
             access_bindings: BTreeSet::new(),
+            escape_parameters: BTreeSet::new(),
             result: "Unit",
             caller_location: false,
         };
@@ -303,6 +312,7 @@ impl Program {
                     loops: BTreeSet::new(),
                     bindings: BTreeSet::new(),
                     access_bindings: BTreeSet::new(),
+                    escape_parameters: BTreeSet::new(),
                     result: "Unit",
                     caller_location: true,
                 }

@@ -117,11 +117,11 @@ let after:=allocation_count(); wt total,after-before;
 fn external_functions_and_custom_operators_remain_opaque() {
     equivalent(
         r##"
-extern fn escape(value:Int)->Int {
+extern fn retain_value(value:Int)->Int {
  cpp_name:"escape",
  code:"Obj<std::int64_t> escape(Obj<std::int64_t> value,Loc){ *value=99; return value; }",
 }
-let held:=escape(1+2); held+=1; wt held;
+let held:=retain_value(1+2); held+=1; wt held;
 struct Weight { value:Int; }
 fn __add__(a:Weight,b:Weight)->Weight { a.value+=b.value; return a; }
 let a:=Weight{value:1}; let b:=a+Weight{value:2}; wt a.value,b.value;

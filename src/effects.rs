@@ -343,6 +343,13 @@ impl State {
             .cloned()
             .unwrap_or_else(ReturnOrigins::unknown)
     }
+    fn returned(&self, value: &Value) -> ReturnOrigins {
+        if self.heap_unknown && !matches!(value.ty.as_str(), "Int" | "Bool" | "Char" | "Unit") {
+            ReturnOrigins::unknown()
+        } else {
+            self.get(value)
+        }
+    }
     fn join(&mut self, other: &Self) -> bool {
         let old = self.clone();
         self.heap_unknown |= other.heap_unknown;
@@ -505,7 +512,8 @@ fn operation(op: &Operation, state: &mut State, summary: &mut Summary, callees: 
         }
         Operation::Release(_)
         | Operation::AnnotateBinding { .. }
-        | Operation::AnnotateAccess { .. } => {}
+        | Operation::AnnotateAccess { .. }
+        | Operation::AnnotateEscape { .. } => {}
     }
 }
 fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Summary {
@@ -544,14 +552,8 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
             Terminator::Return {
                 value: Some(value), ..
             } => {
-                let mut origins = state.get(value);
-                // Mutated aggregates may now retain any source that a member
-                // store or opaque call introduced, beyond their initial fields.
-                if state.heap_unknown
-                    && !matches!(value.ty.as_str(), "Int" | "Bool" | "Char" | "Unit")
-                {
-                    origins = ReturnOrigins::unknown();
-                }
+                // Mutated aggregates may retain sources beyond their initial fields.
+                let origins = state.returned(value);
                 escapes(&mut summary, &origins);
                 summary.returned.join(&origins);
             }
@@ -605,6 +607,189 @@ fn analyze_function(function: &lir::ProgramFunction, callees: &[Summary]) -> Sum
         summary.may_diverge.join(Effect::May);
     }
     summary
+}
+#[derive(Debug)]
+struct EscapeWitness {
+    span: Option<crate::ast::Span>,
+    effect: Effect,
+    reason: String,
+    route: String,
+}
+fn origin_route(origins: &ReturnOrigins, parameter: usize) -> String {
+    if origins.unknown {
+        return "sharing origin is unknown after a heap mutation or opaque call".into();
+    }
+    if let Some(alias) = origins.aliases.iter().find(|a| a.parameter == parameter) {
+        format!(
+            "parameter {} -> {:?} -> contained at {:?}",
+            parameter + 1,
+            alias.parameter_path,
+            alias.result_path
+        )
+    } else {
+        "through a derived alias or a retained value".into()
+    }
+}
+fn first_escape(
+    function: &lir::ProgramFunction,
+    callees: &[Summary],
+    parameter: usize,
+    program: &lir::Program,
+) -> Option<EscapeWitness> {
+    let body = function.body.as_ref()?;
+    let initial = State {
+        values: (0..function.params.len())
+            .map(|i| (ValueId::Parameter(i), ReturnOrigins::parameter(i)))
+            .collect(),
+        heap_unknown: false,
+    };
+    let mut entries = vec![None; body.blocks.len()];
+    entries[0] = Some(initial);
+    let mut pending = VecDeque::from([0]);
+    while let Some(index) = pending.pop_front() {
+        let mut state = entries[index].as_ref().unwrap().clone();
+        let block = &body.blocks[index];
+        for op in &block.instructions {
+            let before = state.clone();
+            let mut step = Summary::inferred(function.params.len());
+            operation(op, &mut state, &mut step, callees);
+            if step.parameters[parameter].escape != Effect::No {
+                let (span, effect, reason, route) = match op {
+                    Operation::Call(call) => {
+                        let callee = &program.functions[call.function];
+                        let actual = call.args.iter().enumerate().find(|(i, arg)| {
+                            let origin = before.get(arg);
+                            callee.effects.parameters[*i].retained != Effect::No
+                                && (origin.unknown
+                                    || origin.aliases.iter().any(|a| a.parameter == parameter))
+                        });
+                        let (argument, route) = actual
+                            .map(|(i, arg)| {
+                                (
+                                    format!("argument {}", i + 1),
+                                    origin_route(&before.get(arg), parameter),
+                                )
+                            })
+                            .unwrap_or(("argument".into(), "unknown retention path".into()));
+                        (
+                            Some(call.span.clone()),
+                            step.parameters[parameter].escape,
+                            format!(
+                                "{argument} of '{}' may be retained outside the call",
+                                callee.name
+                            ),
+                            route,
+                        )
+                    }
+                    Operation::Rebind { value, span, .. } => (
+                        span.clone(),
+                        Effect::Unknown,
+                        "a field store may retain the shared value beyond this call".into(),
+                        origin_route(&before.get(value), parameter),
+                    ),
+                    _ => (
+                        None,
+                        step.parameters[parameter].escape,
+                        "an operation may retain the parameter".into(),
+                        "unknown retention path".into(),
+                    ),
+                };
+                return Some(EscapeWitness {
+                    span,
+                    effect,
+                    reason,
+                    route,
+                });
+            }
+        }
+        let next = match &block.terminator {
+            Terminator::Jump(target) => vec![target.0],
+            Terminator::Branch { yes, no, .. } => vec![yes.0, no.0],
+            Terminator::Return {
+                value: Some(value),
+                span,
+                ..
+            } => {
+                let origins = state.returned(value);
+                let mut step = Summary::inferred(function.params.len());
+                escapes(&mut step, &origins);
+                if step.parameters[parameter].escape != Effect::No {
+                    return Some(EscapeWitness {
+                        span: span.clone(),
+                        effect: step.parameters[parameter].escape,
+                        reason: "the return value may share the parameter, one of its elements or a captured value".into(),
+                        route: origin_route(&origins, parameter),
+                    });
+                }
+                vec![]
+            }
+            _ => vec![],
+        };
+        for next in next {
+            let changed = match &mut entries[next] {
+                Some(entry) => entry.join(&state),
+                slot @ None => {
+                    *slot = Some(state.clone());
+                    true
+                }
+            };
+            if changed {
+                pending.push_back(next);
+            }
+        }
+    }
+    None
+}
+/// Annotations assert an inferred fact; they never replace an unknown effect
+/// with an optimistic one. Returning a value is distinguished from a callee
+/// merely returning an alias which the caller later copies or discards.
+pub(crate) fn validate_noescape(program: &lir::Program) -> Result<(), String> {
+    for function in &program.functions {
+        let Some(body) = &function.body else {
+            continue;
+        };
+        for block in &body.blocks {
+            for op in &block.instructions {
+                let Operation::AnnotateEscape { parameter, info } = op else {
+                    continue;
+                };
+                if info.annotation.mode != crate::ast::EscapeMode::Noescape
+                    || function.effects.parameters[*parameter].escape == Effect::No
+                {
+                    continue;
+                }
+                let callees: Vec<_> = program
+                    .functions
+                    .iter()
+                    .map(|f| f.effects.clone())
+                    .collect();
+                let witness = first_escape(function, &callees, *parameter, program);
+                let span = witness
+                    .as_ref()
+                    .and_then(|w| w.span.as_ref())
+                    .unwrap_or(&info.declaration);
+                let effect = witness.as_ref().map_or(Effect::Unknown, |w| w.effect);
+                let message = if effect == Effect::Unknown {
+                    format!("cannot prove noescape for parameter '{}'", info.name)
+                } else {
+                    format!("noescape parameter '{}' may escape", info.name)
+                };
+                let detail = witness
+                    .as_ref()
+                    .map(|w| format!("{}\nthrough {}", w.reason, w.route))
+                    .unwrap_or_else(|| "inferred sharing effects are unknown".into());
+                return Err(format!(
+                    "{}\n{}\n{}\n{}\nwhile checking noescape in '{}'",
+                    span.error(message),
+                    info.declaration.error("parameter declared here"),
+                    info.annotation.span.error("noescape modifier is here"),
+                    detail,
+                    function.name
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 /// Solve recursive calls to a fixed point. Recursive return provenance starts
 /// at bottom; unbounded paths/alias sets widen to unknown rather than guessing.
@@ -730,7 +915,10 @@ mod tests {
             .into(),
             functions,
             main: Body {
-                instructions: vec![I::Return(None)],
+                instructions: vec![I::Return {
+                    value: None,
+                    span: None,
+                }],
             },
         };
         hir.prune_unreachable();
@@ -779,7 +967,10 @@ mod tests {
             function(
                 &["Int"],
                 "Int",
-                Some(vec![I::Return(Some(param(0, "Int")))]),
+                Some(vec![I::Return {
+                    value: Some(param(0, "Int")),
+                    span: None,
+                }]),
             ),
             function(
                 &["Int"],
@@ -798,7 +989,10 @@ mod tests {
                         target: Place::Local(local(0, "Int").id),
                         value: local(1, "Int"),
                     },
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -817,7 +1011,10 @@ mod tests {
                 "Unit",
                 Some(vec![
                     call(3, vec![param(0, "Bool")], local(0, "Bool")),
-                    I::Return(None),
+                    I::Return {
+                        value: None,
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -825,7 +1022,10 @@ mod tests {
                 "Bool",
                 Some(vec![
                     call(3, vec![param(0, "Bool")], local(0, "Bool")),
-                    I::Return(Some(local(0, "Bool"))),
+                    I::Return {
+                        value: Some(local(0, "Bool")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -837,13 +1037,19 @@ mod tests {
                         result: local(1, "Bool"),
                         expression: Rvalue::BoolCopy(local(0, "Bool")),
                     },
-                    I::Return(Some(local(1, "Bool"))),
+                    I::Return {
+                        value: Some(local(1, "Bool")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
                 &["Bool"],
                 "Bool",
-                Some(vec![I::Return(Some(param(0, "Bool")))]),
+                Some(vec![I::Return {
+                    value: Some(param(0, "Bool")),
+                    span: None,
+                }]),
             ),
         ]);
         assert_eq!(summaries[0].parameters[0].escape, Effect::No);
@@ -869,7 +1075,10 @@ mod tests {
                             index: 0,
                         },
                     },
-                    I::Return(Some(local(1, "Int"))),
+                    I::Return {
+                        value: Some(local(1, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -880,7 +1089,10 @@ mod tests {
                         result: local(0, "Box"),
                         expression: Rvalue::Aggregate(vec![param(0, "Int")]),
                     },
-                    I::Return(Some(local(0, "Box"))),
+                    I::Return {
+                        value: Some(local(0, "Box")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -894,7 +1106,10 @@ mod tests {
                             index: 0,
                         },
                     },
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -925,7 +1140,10 @@ mod tests {
                 Some(vec![
                     call(1, vec![param(0, "Int")], local(0, "Maybe")),
                     call(2, vec![local(0, "Maybe")], local(1, "Int")),
-                    I::Return(Some(local(1, "Int"))),
+                    I::Return {
+                        value: Some(local(1, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -939,7 +1157,10 @@ mod tests {
                             fields: vec![param(0, "Int")],
                         },
                     },
-                    I::Return(Some(local(0, "Maybe"))),
+                    I::Return {
+                        value: Some(local(0, "Maybe")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -954,7 +1175,10 @@ mod tests {
                             index: 0,
                         },
                     },
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -980,10 +1204,16 @@ mod tests {
                 Some(vec![I::If {
                     condition: param(0, "Bool"),
                     yes: Body {
-                        instructions: vec![I::Return(Some(param(1, "Int")))],
+                        instructions: vec![I::Return {
+                            value: Some(param(1, "Int")),
+                            span: None,
+                        }],
                     },
                     no: Body {
-                        instructions: vec![I::Return(Some(param(2, "Int")))],
+                        instructions: vec![I::Return {
+                            value: Some(param(2, "Int")),
+                            span: None,
+                        }],
                     },
                 }]),
             ),
@@ -993,12 +1223,18 @@ mod tests {
                 Some(vec![I::If {
                     condition: param(0, "Bool"),
                     yes: Body {
-                        instructions: vec![I::Return(Some(param(0, "Bool")))],
+                        instructions: vec![I::Return {
+                            value: Some(param(0, "Bool")),
+                            span: None,
+                        }],
                     },
                     no: Body {
                         instructions: vec![
                             call(2, vec![param(0, "Bool")], local(0, "Bool")),
-                            I::Return(Some(local(0, "Bool"))),
+                            I::Return {
+                                value: Some(local(0, "Bool")),
+                                span: None,
+                            },
                         ],
                     },
                 }]),
@@ -1008,7 +1244,10 @@ mod tests {
                 "Bool",
                 Some(vec![
                     call(1, vec![param(0, "Bool")], local(0, "Bool")),
-                    I::Return(Some(local(0, "Bool"))),
+                    I::Return {
+                        value: Some(local(0, "Bool")),
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -1031,7 +1270,10 @@ mod tests {
                 "Unit",
                 Some(vec![
                     call(1, vec![param(0, "Bool")], local(0, "Unit")),
-                    I::Return(None),
+                    I::Return {
+                        value: None,
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -1046,7 +1288,10 @@ mod tests {
                         target: param(0, "Bool"),
                         value: local(0, "Bool"),
                     },
-                    I::Return(None),
+                    I::Return {
+                        value: None,
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -1061,7 +1306,10 @@ mod tests {
                         },
                         value: param(1, "Int"),
                     },
-                    I::Return(None),
+                    I::Return {
+                        value: None,
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -1088,7 +1336,10 @@ mod tests {
                             index: 0,
                         },
                     },
-                    I::Return(Some(local(1, "Int"))),
+                    I::Return {
+                        value: Some(local(1, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
             opaque,
@@ -1119,7 +1370,10 @@ mod tests {
                         index: 0,
                     },
                 },
-                I::Return(Some(local(0, "Int"))),
+                I::Return {
+                    value: Some(local(0, "Int")),
+                    span: None,
+                },
             ]),
         )]);
         assert!(summaries[0].returned.unknown);
@@ -1141,7 +1395,10 @@ mod tests {
                         value: param(1, "Int"),
                     },
                     call(2, vec![param(0, "Box")], local(0, "Int")),
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -1163,7 +1420,10 @@ mod tests {
                         },
                         value: param(1, "Int"),
                     },
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
             function(
@@ -1177,7 +1437,10 @@ mod tests {
                             index: 0,
                         },
                     },
-                    I::Return(Some(local(0, "Int"))),
+                    I::Return {
+                        value: Some(local(0, "Int")),
+                        span: None,
+                    },
                 ]),
             ),
         ]);
@@ -1217,7 +1480,10 @@ mod tests {
                         ],
                     },
                 },
-                I::Return(Some(local(0, "Int"))),
+                I::Return {
+                    value: Some(local(0, "Int")),
+                    span: None,
+                },
             ]),
         )]);
         assert_eq!(

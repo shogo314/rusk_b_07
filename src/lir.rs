@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 pub(crate) struct BlockId(pub usize);
 #[derive(Clone, Debug)]
 pub(crate) enum Operation {
+    AnnotateEscape {
+        parameter: usize,
+        info: hir::EscapeInfo,
+    },
     AnnotateAccess {
         value: Value,
         info: hir::AccessInfo,
@@ -47,6 +51,7 @@ pub(crate) enum Terminator {
         no: BlockId,
     },
     Return {
+        span: Option<crate::ast::Span>,
         value: Option<Value>,
         cleanup: Vec<ValueId>,
     },
@@ -174,7 +179,8 @@ impl Lower {
                     self.terminate(Terminator::Jump(dest));
                 }
                 Instruction::Unreachable => self.terminate(Terminator::Unreachable),
-                Instruction::Return(value) => self.terminate(Terminator::Return {
+                Instruction::Return { value, span } => self.terminate(Terminator::Return {
+                    span: span.clone(),
                     value: value.clone(),
                     cleanup: self.cleanup(0),
                 }),
@@ -209,6 +215,12 @@ impl Lower {
                             value: value.clone(),
                             span: span.clone(),
                         },
+                        Instruction::AnnotateEscape { parameter, info } => {
+                            Operation::AnnotateEscape {
+                                parameter: *parameter,
+                                info: info.clone(),
+                            }
+                        }
                         Instruction::AnnotateAccess { value, info } => Operation::AnnotateAccess {
                             value: value.clone(),
                             info: info.clone(),
@@ -361,6 +373,7 @@ impl Program {
             }
         };
         let mut access_bindings = std::collections::BTreeSet::new();
+        let mut escape_parameters = std::collections::BTreeSet::new();
         for block in &body.blocks {
             for op in &block.instructions {
                 match op {
@@ -428,6 +441,11 @@ impl Program {
                     }
                     Operation::Release(ids) => release(ids)?,
                     Operation::AnnotateBinding { value: v, .. } => value(v)?,
+                    Operation::AnnotateEscape { parameter, .. } => {
+                        if *parameter >= params.len() || !escape_parameters.insert(*parameter) {
+                            return Err("invalid or duplicate LIR escape annotation".into());
+                        }
+                    }
                     Operation::AnnotateAccess { value: v, .. } => {
                         value(v)?;
                         if !matches!(v.id, ValueId::Local(_))
@@ -448,7 +466,9 @@ impl Program {
                     target(*yes)?;
                     target(*no)?;
                 }
-                Terminator::Return { value: v, cleanup } => {
+                Terminator::Return {
+                    value: v, cleanup, ..
+                } => {
                     if let Some(v) = v {
                         value(v)?;
                         if v.ty != result {
@@ -506,7 +526,10 @@ mod tests {
                         ],
                     },
                 },
-                Instruction::Return(Some(int(1))),
+                Instruction::Return {
+                    value: Some(int(1)),
+                    span: None,
+                },
             ],
         };
         let function = lower(&body);
@@ -546,9 +569,77 @@ mod tests {
         };
         assert!(program.validate().unwrap_err().contains("jump target"));
         program.main.blocks[0].terminator = Terminator::Return {
+            span: None,
             value: None,
             cleanup: vec![],
         };
         assert!(program.validate().is_ok());
+    }
+    #[test]
+    fn escape_metadata_requires_unique_parameter_identities_and_preserves_return_locations() {
+        let span = crate::ast::Span {
+            file: "test".into(),
+            line: 4,
+            column: 2,
+        };
+        let info = hir::EscapeInfo {
+            name: "x".into(),
+            declaration: span.clone(),
+            annotation: crate::ast::EscapeAnnotation {
+                mode: crate::ast::EscapeMode::Noescape,
+                span: span.clone(),
+            },
+        };
+        let body = Body {
+            instructions: vec![
+                Instruction::AnnotateEscape {
+                    parameter: 0,
+                    info: info.clone(),
+                },
+                Instruction::Return {
+                    value: None,
+                    span: Some(span.clone()),
+                },
+            ],
+        };
+        let function = lower(&body);
+        assert!(function.slots.is_empty());
+        let Terminator::Return {
+            span: Some(location),
+            ..
+        } = &function.blocks[0].terminator
+        else {
+            panic!("return location was lost")
+        };
+        assert_eq!(location, &span);
+        let types = BTreeMap::from([
+            ("Int".into(), hir::Type::Primitive),
+            ("Unit".into(), hir::Type::Primitive),
+        ]);
+        let mut program = Program {
+            types,
+            functions: vec![],
+            main: function,
+        };
+        assert!(
+            program
+                .validate_body(&program.main, &["Int".into()], "Unit", true)
+                .is_ok()
+        );
+        assert!(
+            program
+                .validate()
+                .unwrap_err()
+                .contains("escape annotation")
+        );
+        program.main.blocks[0]
+            .instructions
+            .push(Operation::AnnotateEscape { parameter: 0, info });
+        assert!(
+            program
+                .validate_body(&program.main, &["Int".into()], "Unit", true)
+                .unwrap_err()
+                .contains("duplicate")
+        );
     }
 }

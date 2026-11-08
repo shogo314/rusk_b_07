@@ -288,11 +288,14 @@ impl Compiler {
                 body: Some((vec![], Box::new(Stmt::Block(vec![], None)))),
                 checked: Some({
                     if !exits {
-                        checked_body.push(Instruction::Return(if result == "Unit" {
-                            None
-                        } else {
-                            Some(value.clone())
-                        }));
+                        checked_body.push(Instruction::Return {
+                            value: if result == "Unit" {
+                                None
+                            } else {
+                                Some(value.clone())
+                            },
+                            span: Some(body.span.clone()),
+                        });
                     }
                     checked_body
                 }),

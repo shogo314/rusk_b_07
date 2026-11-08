@@ -1,0 +1,94 @@
+# 共有の持ち出しを制限する
+
+引数名の前に `noescape` を指定すると、その引数や内部の要素・捕捉値への共有を、呼び出し終了後まで外へ残さないことを検査します。省略時は `escape` です。`escape` は持ち出しを許可するだけで、実際の脱出を要求しません。
+
+```text
+fn increment(noescape value: Int) { value += 1; }
+fn detached(readonly noescape value: Int) -> Int { return copy(value); }
+fn shared(escape value: Int) -> Int { return value; }
+```
+
+`increment` は引数を更新しますが、共有を外へ残しません。`detached` は独立したコピーを返すため、引数の共有を持ち出しません。`shared` は共有を返す関数なので、`noescape` を指定するとエラーになります。
+
+## 指定できる場所と組み合わせ
+
+名前付き関数、型引数付き関数、無名関数の引数に指定します。`readonly` / `mutable`、`fixed` / `rebindable` と組み合わせられ、順番は自由です。
+
+```text
+fn twice(fixed readonly noescape value: Int) -> Int {
+    return value * 2;
+}
+let next := (noescape readonly value: Int) => value + 1;
+```
+
+ローカル変数、`let`・`in`・`for`・パターンの束縛、構造体のフィールドには指定できません。`noescape let x := 1;` と `escape let x := 1;` はエラーです。外部関数の引数への指定も、現在はC++本体を検証できないため拒否します。組み込み実装の信頼契約は別の内部情報として登録しています。
+
+重複指定や `noescape escape` の併記はエラーです。注釈だけでオーバーロードを区別することはできません。
+
+## 何を脱出として扱うか
+
+引数自身、引数の要素・フィールド・enumのpayloadへの共有を返す場合を検査します。タプル・構造体・Option・配列の中へ入れて返す場合や、その値を捕捉したクロージャを返す場合も含みます。
+
+```text
+// 次の定義はエラー
+// fn first(noescape values: Vec<Int>) -> Int { return values[0]; }
+
+fn copied_first(readonly noescape values: Vec<Int>) -> Int {
+    return copy(values[0]);
+}
+```
+
+別名を作っても制約は失われません。仮引数名を別の値へ結び直し、その新しい値を返す場合は、元の引数への共有とは区別します。古い共有を別名に保存して返す場合は依然として脱出です。
+
+別の引数や外部に残る格納先への保存も脱出になります。例えば配列への追加では、配列そのものと追加する値で異なる契約になります。
+
+```text
+fn append<T>(noescape values: Vec<T>, escape value: T) {
+    values.push_back(value);
+}
+```
+
+この関数は `values` 自体への共有を外へ持ち出しません。一方、`value` への共有を配列に保持するので、`value` を `noescape` にするとエラーです。
+
+## 呼び出し・返却・コールバック
+
+呼び出し先の注釈だけで判断せず、その本体や既知の組み込み契約から推論した効果を使います。分岐・反復・再帰・相互再帰も解析します。
+
+呼び出し先が共有を返しただけでは、呼び出し元の引数が外へ残るとは限りません。呼び出し元が結果を捨てたり、独立したコピーにしたりする場合と、共有をそのまま返す場合を区別します。
+
+```text
+fn alias(value: Int) -> Int { return value; }
+fn discard(noescape value: Int) { alias(value); }
+fn detached(noescape value: Int) -> Int { return copy(alias(value)); }
+```
+
+コールバックも同じです。その場で呼ぶだけでも、結果が捕捉値への共有なら脱出することがあります。
+
+```text
+fn invoke<F>(noescape callback: F) -> Int { return callback(); }
+fn discard_result<F>(noescape callback: F) { callback(); }
+let value := 3;
+wt invoke(() => value + 1);     // 新しい結果なので許可
+// wt invoke(() => value);     // 捕捉値への共有を返すためエラー
+discard_result(() => value);  // 結果を捨てるので許可
+```
+
+型引数付きの関数は、実際の型・コールバックで具体化した本体を検査します。未使用の型引数付き関数の全組み合わせを検証する機能ではありません。
+
+## 現在の保守的な検査
+
+β07開発版の初期実装です。未登録の外部実装やコンテナ操作は安全と仮定しません。例えば配列の走査イテレータ、遅延map/filterなどには未解析の操作があり、実際には呼び出し内で使うだけでも拒否する場合があります。
+
+フィールドへの後からの格納は、格納先がその場だけのオブジェクトであっても、現状は外へ残る可能性を保守的に扱います。ヒープへの変更後に返す集合の共有元も不明とする場合があります。一方、タプルなどを直接構築してその場で読み取る場合は、追跡できる共有関係を使います。
+
+Optionの構築・判定・値取得には既知の契約を登録しています。`Some(value)` は新しいOptionを作って内部へ共有を保持し、`value` / `?!` はpayloadへの共有を返します。これらを呼んだだけで外部へ保存されたとは判定せず、その後の利用を追跡します。Option全体のコピーなど、ほかの操作には未解析のものも残っています。
+
+これらの解析精度は今後改善します。注釈がなくても同じ効果解析を行い、`escape` を明示した場合も、証明できた非脱出性をIRへ記録します。現段階では新しい借用・スカラー最適化にはまだ利用していません。
+
+## 診断とIR
+
+共有の返却・保持を検出すると `noescape parameter 'value' may escape` を表示します。解析が不明、または格納先の寿命などを証明できない場合は `cannot prove noescape for parameter 'value'` と区別します。
+
+違反する `return`・保存・呼び出しの位置、引数と `noescape` の宣言位置を示します。呼び出しでは関数名と引数番号、共有元では要素・フィールド・捕捉などの射影経路を示します。中間の関数や別名を一つずつ列挙する説明は今後の改善対象です。
+
+ASTは宣言した注釈、HIR/LIRは `AnnotateEscape` と、関数の `effects` にある `escape` / `retained` を保持します。`escape` は返却を含む持ち出し、`retained` は戻り値以外への保持です。IRには `return` の位置も保持します。宣言を根拠に推論結果を上書きせず、検査を通してからHIR/LIR・C++を出力します。注釈は実行時の処理やC++の引数の型を変更しません。

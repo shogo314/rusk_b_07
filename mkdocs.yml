@@ -22,6 +22,7 @@ nav:
       - コマンドライン: getting-started/cli.md
   - 言語リファレンス:
       - 基本構文と共有: reference/index.md
+      - 共有の持ち出しの制限: reference/escape.md
       - 読み取り専用のアクセス: reference/access.md
       - 名前の結び直しの制限: reference/bindings.md
       - 制御構文: reference/control-flow.md

@@ -147,6 +147,13 @@ s.push_back('?');wt s;
 }
 text.push_back('!');wt text;
 ''', b'', b'a 3\nQ\na\nZ\nZbc!\n'),
+    ('''fn bump(noescape c:Char){c='Z';}
+fn char_copy(readonly noescape text:Str)->Char{return copy(text[0]);}
+fn run<F>(noescape callback:F){callback();}
+let s:="abc";
+{let c:=s[0];bump(c);run(()=>c);wt char_copy(s),s;}
+s.push_back('!');wt s;
+''', b'', b'Z Zbc\nZbc!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

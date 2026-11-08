@@ -45,11 +45,28 @@ pub struct AccessAnnotation {
     pub mode: AccessMode,
     pub span: Span,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EscapeMode {
+    Noescape,
+    Escape,
+}
+#[derive(Clone, Debug)]
+pub struct EscapeAnnotation {
+    pub mode: EscapeMode,
+    pub span: Span,
+}
+#[derive(Default)]
+struct Modifiers {
+    binding: Option<BindingAnnotation>,
+    access: Option<AccessAnnotation>,
+    escape: Option<EscapeAnnotation>,
+}
 #[derive(Clone, Debug)]
 pub struct DeclaredName {
     pub name: Name,
     pub binding: Option<BindingAnnotation>,
     pub access: Option<AccessAnnotation>,
+    pub escape: Option<EscapeAnnotation>,
 }
 impl DeclaredName {
     pub fn plain(name: Name) -> Self {
@@ -57,6 +74,7 @@ impl DeclaredName {
             name,
             binding: None,
             access: None,
+            escape: None,
         }
     }
 }
@@ -66,11 +84,10 @@ impl std::ops::Deref for DeclaredName {
         &self.name
     }
 }
-fn annotations(
-    modifiers: &g::BindingModifiers<'_>,
-) -> Result<(Option<BindingAnnotation>, Option<AccessAnnotation>), String> {
+fn annotations(modifiers: &g::BindingModifiers<'_>) -> Result<Modifiers, String> {
     let mut binding: Option<BindingAnnotation> = None;
     let mut access: Option<AccessAnnotation> = None;
+    let mut escape: Option<EscapeAnnotation> = None;
     for item in &modifiers.binding_modifiers_list {
         match item.binding_modifier.as_ref() {
             g::BindingModifier::Fixed(item) => {
@@ -89,9 +106,21 @@ fn annotations(
             g::BindingModifier::Mutable(item) => {
                 set_access(&mut access, AccessMode::Mutable, Span::token(&item.mutable))?
             }
+            g::BindingModifier::Noescape(item) => set_escape(
+                &mut escape,
+                EscapeMode::Noescape,
+                Span::token(&item.noescape),
+            )?,
+            g::BindingModifier::Escape(item) => {
+                set_escape(&mut escape, EscapeMode::Escape, Span::token(&item.escape))?
+            }
         }
     }
-    Ok((binding, access))
+    Ok(Modifiers {
+        binding,
+        access,
+        escape,
+    })
 }
 fn set_binding(
     previous: &mut Option<BindingAnnotation>,
@@ -131,6 +160,25 @@ fn set_access(
     *previous = Some(AccessAnnotation { mode, span });
     Ok(())
 }
+fn set_escape(
+    previous: &mut Option<EscapeAnnotation>,
+    mode: EscapeMode,
+    span: Span,
+) -> Result<(), String> {
+    if let Some(old) = previous {
+        return Err(format!(
+            "{}\n{}",
+            span.error(if old.mode == mode {
+                "duplicate escape modifier"
+            } else {
+                "conflicting escape modifiers"
+            }),
+            old.span.error("previous escape modifier is here")
+        ));
+    }
+    *previous = Some(EscapeAnnotation { mode, span });
+    Ok(())
+}
 fn parameters(parameters: &g::Parameters<'_>) -> Result<Vec<(DeclaredName, Name)>, String> {
     let Some(first) = &parameters.parameters_opt else {
         return Ok(vec![]);
@@ -143,12 +191,17 @@ fn parameters(parameters: &g::Parameters<'_>) -> Result<Vec<(DeclaredName, Name)
                 .map(|p| p.parameter.as_ref()),
         )
         .map(|p| {
-            let (binding, access) = annotations(&p.binding_modifiers)?;
+            let Modifiers {
+                binding,
+                access,
+                escape,
+            } = annotations(&p.binding_modifiers)?;
             Ok((
                 DeclaredName {
                     name: name(&p.identifier),
                     binding,
                     access,
+                    escape,
                 },
                 type_name(&p.type_name),
             ))
@@ -515,7 +568,16 @@ fn simple_stmt(s: &g::SimpleStatement<'_>) -> Result<Stmt, String> {
         g::SimpleStatement::Let(x) => {
             let x = &x.r#let;
             let mut binding = binding(&x.binding);
-            let (mode, access) = annotations(&x.binding_modifiers)?;
+            let Modifiers {
+                binding: mode,
+                access,
+                escape,
+            } = annotations(&x.binding_modifiers)?;
+            if let Some(annotation) = escape {
+                return Err(annotation
+                    .span
+                    .error("escape modifiers are only supported on parameters"));
+            }
             binding.annotate(&mode, &access);
             Stmt::Let(
                 binding,

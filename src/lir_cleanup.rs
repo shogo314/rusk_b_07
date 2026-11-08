@@ -166,6 +166,7 @@ mod tests {
                         Operation::Release(vec![id.clone()]),
                     ],
                     terminator: Terminator::Return {
+                        span: None,
                         value: None,
                         cleanup: vec![id],
                     },

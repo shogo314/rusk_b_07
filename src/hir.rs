@@ -74,7 +74,17 @@ pub(crate) struct AccessInfo {
     pub annotation: crate::ast::AccessAnnotation,
 }
 #[derive(Clone, Debug)]
+pub(crate) struct EscapeInfo {
+    pub name: String,
+    pub declaration: Span,
+    pub annotation: crate::ast::EscapeAnnotation,
+}
+#[derive(Clone, Debug)]
 pub(crate) enum Instruction {
+    AnnotateEscape {
+        parameter: usize,
+        info: EscapeInfo,
+    },
     AnnotateAccess {
         value: Value,
         info: AccessInfo,
@@ -118,7 +128,10 @@ pub(crate) enum Instruction {
     },
     Break(LoopId),
     Continue(LoopId),
-    Return(Option<Value>),
+    Return {
+        value: Option<Value>,
+        span: Option<Span>,
+    },
     Unreachable,
 }
 #[derive(Clone, Default, Debug)]

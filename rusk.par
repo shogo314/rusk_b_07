@@ -41,7 +41,7 @@ ExternSymbol: 'extern'^ 'symbol'^ Identifier '{'^ Properties '}'^;
 Parameters: [ Parameter { ','^ Parameter } ];
 Parameter: BindingModifiers Identifier ':'^ TypeName;
 BindingModifiers: { BindingModifier };
-BindingModifier: 'fixed' | 'rebindable' | 'readonly' | 'mutable';
+BindingModifier: 'fixed' | 'rebindable' | 'readonly' | 'mutable' | 'noescape' | 'escape';
 TypeName: NamedType | TupleType;
 NamedType: Identifier [ TypeArguments ];
 TypeArguments: '<'^ TypeName { ','^ TypeName } '>'^;

@@ -295,14 +295,26 @@ impl Compiler {
         } else {
             format!("Obj<{native}> $fn(Loc){{return make_obj<{native}>({native}{{}});}}")
         };
-        self.cached_native(
+        let function = self.cached_native(
             &format!("$constructor_{base}"),
             params,
             &result,
             |cpp| code.replace("$fn", cpp),
             span,
+        )?;
+        let contract = crate::native_effects::contract(
+            match base {
+                "Some" => "option_some",
+                "try_read" => "io_read_fresh",
+                _ => "read_fresh",
+            },
+            &self.functions[function].params,
+            &result,
+            &self.ir_types(),
         )
-        .map(Some)
+        .map_err(|error| span.error(error))?;
+        self.native_contracts.insert(function, contract);
+        Ok(Some(function))
     }
     pub(super) fn collection_operation(
         &mut self,

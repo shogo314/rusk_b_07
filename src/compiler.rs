@@ -233,6 +233,11 @@ impl Compiler {
                             {
                                 return Err(annotation.span.error("access modifiers on extern parameters require a Rusk function body"));
                             }
+                            if matches!(s, Stmt::Function(..))
+                                && let Some(annotation) = &param.escape
+                            {
+                                return Err(annotation.span.error("escape modifiers on extern parameters require a Rusk function body"));
+                            }
                             self.check_type(ty)?;
                             if !names.insert(&param.text) {
                                 return Err(param.span.error("duplicate parameter"));
@@ -340,7 +345,10 @@ impl Compiler {
             }
         }
         self.body = main_body;
-        self.body.push(Instruction::Return(None));
+        self.body.push(Instruction::Return {
+            value: None,
+            span: None,
+        });
         let mut hir = crate::hir::Program {
             types: self.ir_types(),
             functions: self
@@ -374,6 +382,7 @@ impl Compiler {
         }
         hir.validate()?;
         lir.validate()?;
+        crate::effects::validate_noescape(&lir)?;
         let access = crate::readonly::analyze(&lir)?;
         for (id, summary) in access.into_iter().enumerate() {
             hir.functions[id].access = summary.clone();
@@ -428,7 +437,10 @@ impl Compiler {
                 .error("function may finish without returning a value"));
         }
         if f.result == "Unit" {
-            self.body.push(Instruction::Return(None));
+            self.body.push(Instruction::Return {
+                value: None,
+                span: None,
+            });
         }
         self.functions[index].checked = Some(std::mem::take(&mut self.body));
         self.scopes.clear();
@@ -824,8 +836,10 @@ impl Compiler {
                     if self.infer_return {
                         self.inferred_return = Some(ty.into());
                     }
-                    self.body
-                        .push(Instruction::Return(if ty == "Unit" { None } else { value }));
+                    self.body.push(Instruction::Return {
+                        value: if ty == "Unit" { None } else { value },
+                        span: Some(span.clone()),
+                    });
                     self.diverged = true;
                 }
             }

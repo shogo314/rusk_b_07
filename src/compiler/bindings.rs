@@ -6,6 +6,25 @@ impl Compiler {
         ty: String,
         value: Option<Value>,
     ) -> Result<(), String> {
+        if let Some(annotation) = &name.escape {
+            let Some(Value {
+                id: ValueId::Parameter(parameter),
+                ..
+            }) = &value
+            else {
+                return Err(annotation
+                    .span
+                    .error("escape modifiers require a parameter identity"));
+            };
+            self.body.push(Instruction::AnnotateEscape {
+                parameter: *parameter,
+                info: crate::hir::EscapeInfo {
+                    name: name.text.clone(),
+                    declaration: name.span.clone(),
+                    annotation: annotation.clone(),
+                },
+            });
+        }
         self.declare(&name.name, ty, value)?;
         if let Some(annotation) = &name.binding {
             let info = crate::hir::BindingInfo {

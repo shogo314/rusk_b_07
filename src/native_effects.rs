@@ -105,6 +105,54 @@ pub(crate) fn contract(
                 });
             }
         }
+        "option_some" => {
+            if parameters.len() != 1 {
+                return Err("native Some contract requires one value".into());
+            }
+            let Some(crate::hir::Type::Enum(variants)) = types.get(result) else {
+                return Err("native Some contract requires an enum result".into());
+            };
+            if variants
+                .first()
+                .is_none_or(|(name, fields)| name != "Some" || fields != parameters)
+            {
+                return Err("native Some contract has an invalid payload".into());
+            }
+            summary.parameters[0].escape = Effect::May;
+            summary.returned.aliases.insert(ReturnAlias {
+                result_path: vec![crate::effects::Projection::VariantField {
+                    variant: 0,
+                    field: 0,
+                }],
+                parameter: 0,
+                parameter_path: vec![],
+            });
+        }
+        "option_value" => {
+            if parameters.len() != 1 {
+                return Err("native Option value contract requires one receiver".into());
+            }
+            let Some(crate::hir::Type::Enum(variants)) = types.get(&parameters[0]) else {
+                return Err("native Option value contract requires an enum".into());
+            };
+            if variants
+                .first()
+                .is_none_or(|(name, fields)| name != "Some" || fields.as_slice() != [result])
+            {
+                return Err("native Option value contract has an invalid payload".into());
+            }
+            summary.returned.fresh = false;
+            summary.returned.aliases.insert(ReturnAlias {
+                result_path: vec![],
+                parameter: 0,
+                parameter_path: vec![crate::effects::Projection::VariantField {
+                    variant: 0,
+                    field: 0,
+                }],
+            });
+            summary.parameters[0].escape = Effect::May;
+            summary.may_fail = Effect::May;
+        }
         "element" => {
             if parameters.len() != 2 || parameters[1] != "Int" {
                 return Err("native element contract requires (container, Int)".into());
@@ -250,5 +298,42 @@ mod tests {
             )
             .is_err()
         );
+    }
+    #[test]
+    fn option_value_returns_a_checked_payload_alias_without_external_retention() {
+        let mut types = types();
+        types.insert(
+            "Option<Int>".into(),
+            Type::Enum(vec![
+                ("Some".into(), vec!["Int".into()]),
+                ("None".into(), vec![]),
+            ]),
+        );
+        let summary = contract("option_value", &["Option<Int>".into()], "Int", &types).unwrap();
+        assert_eq!(summary.parameters[0].escape, Effect::May);
+        assert_eq!(summary.parameters[0].retained, Effect::No);
+        assert_eq!(summary.parameters[0].write, Effect::No);
+        assert_eq!(
+            summary.returned.aliases.first().unwrap().parameter_path,
+            vec![Projection::VariantField {
+                variant: 0,
+                field: 0
+            }]
+        );
+        assert_eq!(summary.may_fail, Effect::May);
+        let constructor = contract("option_some", &["Int".into()], "Option<Int>", &types).unwrap();
+        assert!(constructor.returned.fresh);
+        assert_eq!(constructor.parameters[0].escape, Effect::May);
+        assert_eq!(constructor.parameters[0].retained, Effect::No);
+        assert_eq!(
+            constructor.returned.aliases.first().unwrap().result_path,
+            vec![Projection::VariantField {
+                variant: 0,
+                field: 0
+            }]
+        );
+        assert!(contract("option_some", &["Str".into()], "Option<Int>", &types).is_err());
+        assert!(contract("option_value", &["Option<Int>".into()], "Str", &types).is_err());
+        assert!(contract("option_value", &["Int".into()], "Int", &types).is_err());
     }
 }

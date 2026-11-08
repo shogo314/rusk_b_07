@@ -152,6 +152,7 @@ mod tests {
             blocks: vec![Block {
                 instructions,
                 terminator: Terminator::Return {
+                    span: None,
                     value: None,
                     cleanup: vec![],
                 },
