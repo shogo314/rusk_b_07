@@ -8,6 +8,8 @@
 
 ## 現在の状態
 
+2026年11月9日、β07を現在の実装範囲でfixします。文書化した解析の制限・性能差は次版へ引き継ぎます。次版の作成は、この状態の全テストCIと文書公開の成功を確認してから行います。
+
 β07では、変更・副作用・共有・脱出の情報をHIR/LIRで解析し、引数・ローカル変数のreadonly/mutable・fixed/rebindableと、引数のnoescape/escapeを任意に指定して契約を検査できます。違反時は宣言・別名・呼び出し先内部の経路と、不明性を説明します。推論した効果に基づく引数借用、閉じたInt・Bool・Charの値保持、安定した配列要素の直接借用、所有者を残した要素の別名と仮引数の別名の分岐・ループをまたぐ借用を実装しました。解析の制限と完成条件は[β07の要件](design/beta07.md)・[実装と検証](docs/development/beta07.md)、測定値とsumの移行見送りの根拠は[性能記録](docs/development/beta07-performance.md)を参照してください。
 
 β06では[パターン分岐・ガード・if let](docs/reference/beta06.md)を追加しています。入れ子のenum、タプル・構造体、定数、orパターン、matchガード、文と式のif let、while letに対応します。[最小・最大演算子](docs/reference/minmax.md)にも対応します。[β06の要件](design/beta06.md)を参照してください。
