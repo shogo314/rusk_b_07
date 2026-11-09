@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CASES = {
     'scalar_call': ('fn add_one(x:Int)->Int{return x+1;}let i:=0;let total:=0;'
                     'while i<500000{total+=add_one(i);i+=1;}wt total;'),
+    'element_call': ('fn add_one(x:Int)->Int{return x+1;}'
+                     'let a:=[1;100000];let total:=0;'
+                     'for i in 0..20{for x in a{total+=add_one(x);}}wt total;'),
     'find': 'let a:=[1;100000];let total:=0;for i in 0..20{total+=find(a,2)??-1;}wt total;',
     'sum_native': 'let a:=[1;1000000];let total:=0;for i in 0..20{total+=sum(a);}wt total;',
     'sum_rusk': ('fn rusk_total(a:Vec<Int>)->Int{let total:=0;for x in a{total+=x;}return total;}'

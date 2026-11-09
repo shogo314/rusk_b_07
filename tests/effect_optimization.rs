@@ -370,3 +370,99 @@ let c:=[3];let i:=0;for x in c{i:=1;wt x;}wt i;
         assert!(access.starts_with("Obj<std::int64_t> "), "{access}");
     }
 }
+
+#[test]
+fn inferred_borrowed_calls_keep_one_element_owner_and_borrow_its_aliases() {
+    equivalent(
+        r#"
+fn next(x:Int)->Int{return x+1;}
+fn annotated(readonly noescape x:Int)->Int{return x+1;}
+let a:=[1,2,3];let total:=0;
+for x in a{let alias:=x;total+=next(alias)+annotated(x);}wt total;
+let callback:=(x:Int)=>x+2;for x in a{wt callback(x);}
+fn rebound(x:Int)->Int{let old:=x;x:=10;return old+x;}
+for x in a{wt rebound(x);}
+fn code(c:Char)->Bool{return c=='a';}
+let text:="ab";let chars:=[text[0],text[1]];
+for ch in chars{wt code(ch);}chars=[];text.push_back('!');wt text;
+let local:=3;let alias:=local;wt next(local);alias=8;wt local;
+"#,
+        "18\n3\n4\n5\n11\n12\n13\nYes\nNo\nab!\n4\n8\n",
+    );
+    for parameter in ["x:Int", "readonly noescape x:Int", "mutable escape x:Int"] {
+        let case = Case::new(&format!(
+            "fn next({parameter})->Int{{return x+1;}}let a:=[1,2];for x in a{{wt next(x);}}"
+        ));
+        assert!(case.compile().status.success());
+        let fast = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        assert!(signature(&fast, "next").contains("const Obj<std::int64_t>& rusk_p0"));
+        let main = fast.split_once("int main() {").unwrap().1;
+        let getter = main
+            .lines()
+            .find(|line| line.contains("iterator exhausted"))
+            .unwrap();
+        assert!(getter.starts_with("Obj<std::int64_t> "), "{getter}");
+        let owner = getter
+            .split_whitespace()
+            .nth(1)
+            .unwrap()
+            .split('=')
+            .next()
+            .unwrap();
+        let aliases = main
+            .lines()
+            .filter(|line| {
+                line.starts_with("const Obj<std::int64_t>& ")
+                    && line.ends_with(&format!("={owner};"))
+            })
+            .count();
+        assert!(aliases >= 2, "{main}");
+        assert_eq!(
+            main.matches(&format!("{owner}.reset();")).count(),
+            1,
+            "{main}"
+        );
+        assert!(!main.contains("() -> const auto&"));
+        assert!(case.compile_with_options(&["--no-opt"]).status.success());
+        let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        assert!(!plain.contains("const Obj<std::int64_t>& rusk_v"));
+    }
+}
+
+#[test]
+fn element_call_borrowing_rejects_mutation_escape_and_opaque_calls() {
+    equivalent(
+        r#"
+fn update(x:Int){x+=1;}
+fn identity(x:Int)->Int{return x;}
+fn after(x:Int,other:Int)->Int{other=9;return x+0;}
+let a:=[1];for x in a{update(x);wt x;}wt a;
+let b:=[2];for x in b{let saved:=identity(x);saved=7;wt x;}wt b;
+let c:=[3];for x in c{wt after(x,x);}wt c;
+fn stored(x:Int,values:Vec<Int>){values.push_back(x);}
+let held:Vec<Int>:=[];let d:=[4];for x in d{stored(x,held);}d=[];held[0]=8;wt held;
+"#,
+        "2\n2\n7\n7\n9\n9\n8\n",
+    );
+    for source in [
+        "fn use_value(x:Int){x+=1;}let a:=[1];for x in a{use_value(x);}",
+        "fn use_value(x:Int)->Int{return x;}let a:=[1];for x in a{wt use_value(x);}",
+        r#"extern fn use_value(x:Int)->Int{
+cpp_name:"use_value",code:"Obj<std::int64_t> use_value(Obj<std::int64_t> x,Loc){return make_obj<std::int64_t>(*x+1);}",
+}let a:=[1];for x in a{wt use_value(x);}"#,
+        r#"extern fn foreign(){cpp_name:"foreign",code:"void foreign(Loc){}",}
+fn use_value(x:Int)->Int{foreign();return x+1;}
+let a:=[1];for x in a{wt use_value(x);}"#,
+    ] {
+        let case = Case::new(source);
+        let compiled = case.compile();
+        assert!(
+            compiled.status.success(),
+            "{}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+        let cpp = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        let main = cpp.split_once("int main() {").unwrap().1;
+        assert!(!main.contains("const Obj<std::int64_t>& rusk_v"), "{main}");
+    }
+}

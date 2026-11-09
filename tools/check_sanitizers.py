@@ -233,6 +233,14 @@ extern fn deferred(a:Vec<Int>)->Int{
 }
 let b:=[1];{let token:=deferred(b);for x in b{{let alias:=token;}wt x;}}wt b;
 ''', b'', b'6\n8\na\nb\nab!\n7\n1\n9\n1\n9\n'),
+    ('''fn next(x:Int)->Int{return x+1;}
+let a:=[1,2,3];let total:=0;for x in a{let alias:=x;total+=next(alias);}wt total;
+fn code(c:Char)->Bool{return c=='a';}
+let text:="ab";let chars:=[text[0],text[1]];
+for ch in chars{wt code(ch);}chars=[];text.push_back('!');wt text;
+fn identity(x:Int)->Int{return x;}
+let b:=[4];for x in b{let saved:=identity(x);saved=7;wt x;}wt b;
+''', b'', b'9\nYes\nNo\nab!\n7\n7\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

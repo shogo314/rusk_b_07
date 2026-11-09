@@ -20,13 +20,7 @@ fn signature(function: &ProgramFunction, context: &Context, optimize: bool) -> S
         .iter()
         .enumerate()
         .map(|(i, t)| {
-            let effect = &function.effects.parameters[i];
-            let borrowed = optimize
-                && function.effects.source == crate::effects::SummarySource::Inferred
-                && function.effects.external_write == crate::effects::Effect::No
-                && effect.write == crate::effects::Effect::No
-                && effect.structural == crate::effects::Effect::No
-                && effect.escape == crate::effects::Effect::No;
+            let borrowed = optimize && super::borrows_parameter(function, i);
             if borrowed {
                 format!("const Obj<{}>& rusk_p{i}", context.types[t])
             } else {

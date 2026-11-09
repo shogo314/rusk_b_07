@@ -1,0 +1,208 @@
+{
+  "utc": "2026-11-09T00:42:15.565027+00:00",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "cpu": "AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+  "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "compiler_sha256": {
+    "baseline": "1e99f99d721d8d67165c5ed58a73c4b7d10ee67b747b673823f4d65876d6a202",
+    "current": "ab7e14990296863d777eb636ce2faab460771950ae0ff848807b84a1b3bd8068"
+  },
+  "repeats": 7,
+  "flags": [
+    "-std=c++20",
+    "-O2"
+  ],
+  "timing": "interleaved; compilation excluded; instrumentation measured separately",
+  "cases": {
+    "scalar_call": {
+      "source": "fn add_one(x:Int)->Int{return x+1;}let i:=0;let total:=0;while i<500000{total+=add_one(i);i+=1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "125000250000\n",
+          "cpp_sha256": "8deccb7857629c73f5f21ccc26c4cf4e1123bf796d6d1691bed22bbc35325307",
+          "runs_ms": [
+            13.274959,
+            11.46171,
+            11.350252,
+            11.423901,
+            11.563432,
+            11.918052,
+            11.11524
+          ],
+          "allocations": 500007,
+          "shared_ptr_copies": 3000002,
+          "median_ms": 11.46171
+        },
+        "current": {
+          "output": "125000250000\n",
+          "cpp_sha256": "8deccb7857629c73f5f21ccc26c4cf4e1123bf796d6d1691bed22bbc35325307",
+          "runs_ms": [
+            11.619834,
+            12.560783,
+            11.535235,
+            11.687565,
+            11.460138,
+            13.096943,
+            11.435624
+          ],
+          "allocations": 500007,
+          "shared_ptr_copies": 3000002,
+          "median_ms": 11.619834
+        }
+      },
+      "speedup": 0.986391888214582
+    },
+    "element_call": {
+      "source": "fn add_one(x:Int)->Int{return x+1;}let a:=[1;100000];let total:=0;for i in 0..20{for x in a{total+=add_one(x);}}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "4000000\n",
+          "cpp_sha256": "7b5a2a2f2b63502d66a9da5c4aeb76eab970f04ae7e41f6a11df944bbeb81603",
+          "runs_ms": [
+            41.372483,
+            42.180721,
+            41.047116,
+            42.450096,
+            42.493938,
+            41.257876,
+            42.261019
+          ],
+          "allocations": 2100034,
+          "shared_ptr_copies": 12000066,
+          "median_ms": 42.180721
+        },
+        "current": {
+          "output": "4000000\n",
+          "cpp_sha256": "6d22f2d2b559215a1ca637cfeda17f6d49e72ab7aea099bd849704f1567bb68e",
+          "runs_ms": [
+            31.336137,
+            30.137593,
+            30.049919,
+            30.534463,
+            29.46318,
+            29.340936,
+            31.922028
+          ],
+          "allocations": 2100034,
+          "shared_ptr_copies": 8000066,
+          "median_ms": 30.137593
+        }
+      },
+      "speedup": 1.399604839046038
+    },
+    "find": {
+      "source": "let a:=[1;100000];let total:=0;for i in 0..20{total+=find(a,2)??-1;}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "-20\n",
+          "cpp_sha256": "5a8b1a943f962138c956ea63699ab439935d4f6995950b9f8f394fcfd8f0e81f",
+          "runs_ms": [
+            31.606892,
+            30.840114,
+            30.703656,
+            30.67682,
+            30.519465,
+            30.661988,
+            31.243245
+          ],
+          "allocations": 100094,
+          "shared_ptr_copies": 14000246,
+          "median_ms": 30.703656
+        },
+        "current": {
+          "output": "-20\n",
+          "cpp_sha256": "5a8b1a943f962138c956ea63699ab439935d4f6995950b9f8f394fcfd8f0e81f",
+          "runs_ms": [
+            31.409654,
+            31.076879,
+            30.096757,
+            30.840571,
+            30.450767,
+            30.554029,
+            31.919785
+          ],
+          "allocations": 100094,
+          "shared_ptr_copies": 14000246,
+          "median_ms": 30.840571
+        }
+      },
+      "speedup": 0.995560555607093
+    },
+    "sum_native": {
+      "source": "let a:=[1;1000000];let total:=0;for i in 0..20{total+=sum(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "4b76d287d510be4b16982f6b0e43503dd1c4133c6ad4872f5ddb7deccfb45c56",
+          "runs_ms": [
+            42.544184,
+            45.767104,
+            42.747968,
+            43.125273,
+            43.789167,
+            46.148685,
+            44.666161
+          ],
+          "allocations": 1000034,
+          "shared_ptr_copies": 46,
+          "median_ms": 43.789167
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "4b76d287d510be4b16982f6b0e43503dd1c4133c6ad4872f5ddb7deccfb45c56",
+          "runs_ms": [
+            44.288626,
+            42.058194,
+            47.463965,
+            43.206235,
+            43.829989,
+            44.131119,
+            43.835907
+          ],
+          "allocations": 1000034,
+          "shared_ptr_copies": 46,
+          "median_ms": 43.835907
+        }
+      },
+      "speedup": 0.9989337508175661
+    },
+    "sum_rusk": {
+      "source": "fn rusk_total(a:Vec<Int>)->Int{let total:=0;for x in a{total+=x;}return total;}let a:=[1;1000000];let total:=0;for i in 0..20{total+=rusk_total(a);}wt total;",
+      "variants": {
+        "baseline": {
+          "output": "20000000\n",
+          "cpp_sha256": "87bff35dfb15ed3ee4e8115e64302bcd2547d0f01f1605bf21efbd05e04697d9",
+          "runs_ms": [
+            48.820817,
+            49.441425,
+            49.41917,
+            50.995933,
+            49.413351,
+            50.890144,
+            50.124384
+          ],
+          "allocations": 1000054,
+          "shared_ptr_copies": 126,
+          "median_ms": 49.441425
+        },
+        "current": {
+          "output": "20000000\n",
+          "cpp_sha256": "87bff35dfb15ed3ee4e8115e64302bcd2547d0f01f1605bf21efbd05e04697d9",
+          "runs_ms": [
+            47.919108,
+            48.054852,
+            49.845185,
+            52.700131,
+            53.856195,
+            51.020609,
+            50.035397
+          ],
+          "allocations": 1000054,
+          "shared_ptr_copies": 126,
+          "median_ms": 50.035397
+        }
+      },
+      "speedup": 0.9881289639812391
+    }
+  }
+}

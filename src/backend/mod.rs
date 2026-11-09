@@ -14,6 +14,19 @@ pub(crate) struct FunctionInfo {
 }
 pub(crate) use cpp::emit as cpp;
 
+/// This must agree at function signatures and at callers borrowing aliases.
+/// User annotations alone and native contracts do not select a borrowed ABI.
+fn borrows_parameter(function: &crate::lir::ProgramFunction, index: usize) -> bool {
+    use crate::effects::{Effect, SummarySource};
+    let parameter = &function.effects.parameters[index];
+    function.body.is_some()
+        && function.effects.source == SummarySource::Inferred
+        && function.effects.external_write == Effect::No
+        && parameter.write == Effect::No
+        && parameter.structural == Effect::No
+        && parameter.escape == Effect::No
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Emit {
     Cpp,

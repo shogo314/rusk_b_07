@@ -1,7 +1,8 @@
-//! Closed groups of fresh scalar references can share inline storage. Every use
-//! must stay in generated scalar operations; foreign calls, member
-//! storage and rebinding keep ordinary ownership. Fresh groups may be mutated
-//! by scalar assignment and promoted when returned; owned groups stay readonly.
+//! Closed fresh scalar aliases share inline storage; element aliases borrow one
+//! owning Obj. Fresh groups stay in generated scalar operations, with mutation
+//! and return promotion. Owned groups stay readonly and may also be passed to
+//! ordinary functions with an inferred borrowed parameter. Foreign calls,
+//! member storage and rebinding keep ordinary ownership.
 use super::{FunctionInfo, intrinsics};
 use crate::{
     effects::Effect,
@@ -125,7 +126,9 @@ fn groups(
                     let lowered = intrinsics::lower(call, &functions[call.function]).is_some();
                     for (index, arg) in call.args.iter().enumerate() {
                         let effect = &summaries[call.function].effects.parameters[index];
-                        if !lowered
+                        if (!lowered
+                            && !(owned
+                                && super::borrows_parameter(&summaries[call.function], index)))
                             || (effect.write != Effect::No
                                 && (owned
                                     || functions[call.function].name != "__assign__"
