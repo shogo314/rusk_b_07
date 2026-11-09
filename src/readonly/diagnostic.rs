@@ -1,6 +1,7 @@
-//! Describe the access being checked, without claiming a complete provenance
-//! through mutable assignments or control-flow joins. Restriction origins are
-//! independently supplied by AccessPaths.
+//! Explain an independently proved access violation. Provenance is replayed
+//! only after failure and never participates in access or effect inference.
+mod routes;
+mod trail;
 use crate::{
     hir::{Rvalue, Value},
     lir::{self, Operation},
@@ -10,15 +11,29 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct Failure {
     pub message: String,
     pub value: Value,
+    source: Box<crate::hir::AccessInfo>,
+    path: Vec<crate::effects::Projection>,
+    uncertain: bool,
 }
 impl Failure {
-    pub fn new(message: String, value: &Value) -> Self {
+    pub fn new(message: String, value: &Value, access: &super::AccessPaths, unknown: bool) -> Self {
+        let (path, sources) = access.0.first_key_value().unwrap();
         Self {
             message,
             value: value.clone(),
+            source: Box::new(sources.first().unwrap().clone()),
+            path: path.clone(),
+            uncertain: unknown || access.1,
         }
     }
-    pub fn explain(self, body: &lir::Function, program: &lir::Program) -> String {
+    pub fn explain(
+        self,
+        body: &lir::Function,
+        program: &lir::Program,
+        summaries: &[super::Summary],
+        point: (usize, usize),
+    ) -> String {
+        let route = routes::explain(&self, body, program, summaries, point);
         let mut names = BTreeMap::new();
         let mut definitions = BTreeMap::new();
         let mut ambiguous = BTreeSet::new();
@@ -116,7 +131,7 @@ impl Failure {
                 _ => break,
             }
         }
-        if steps.is_empty() {
+        let message = if steps.is_empty() {
             self.message
         } else {
             format!(
@@ -124,6 +139,7 @@ impl Failure {
                 self.message,
                 steps.join("\n  ")
             )
-        }
+        };
+        format!("{message}{route}")
     }
 }

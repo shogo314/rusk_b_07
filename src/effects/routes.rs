@@ -119,7 +119,7 @@ impl Origins {
         result
     }
 }
-pub(super) fn projection_name(ty: &str, projection: &Projection, program: &lir::Program) -> String {
+pub(crate) fn projection_name(ty: &str, projection: &Projection, program: &lir::Program) -> String {
     match projection {
         Projection::Field(index) => {
             let name = program

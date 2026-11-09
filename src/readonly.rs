@@ -15,6 +15,13 @@ use heap::{Heap, Reference};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct AccessPaths(BTreeMap<Vec<Projection>, BTreeSet<AccessInfo>>, bool);
 impl AccessPaths {
+    fn diagnostic_cost(&self) -> usize {
+        1 + self
+            .0
+            .iter()
+            .map(|(path, sources)| path.len() + sources.len())
+            .sum::<usize>()
+    }
     fn root(info: AccessInfo) -> Self {
         Self([(vec![], [info].into())].into(), false)
     }
@@ -160,6 +167,15 @@ fn aggregate(ty: &str) -> bool {
     !matches!(ty, "Int" | "Bool" | "Char" | "Unit")
 }
 impl State {
+    fn diagnostic_cost(&self) -> usize {
+        self.heap.diagnostic_cost()
+            + self.objects.diagnostic_cost()
+            + self
+                .values
+                .values()
+                .map(Reference::diagnostic_cost)
+                .sum::<usize>()
+    }
     fn reference(&self, value: &Value) -> Reference {
         self.values
             .get(&value.id)
@@ -288,7 +304,9 @@ fn operation(
                                 "field or tuple element rebinding",
                                 false,
                             )
-                            .map_err(|error| diagnostic::Failure::new(error, owner))?;
+                            .map_err(|error| {
+                                diagnostic::Failure::new(error, owner, &owner_access, false)
+                            })?;
                     }
                     if state.objects.store(
                         &state.reference(owner),
@@ -309,13 +327,20 @@ fn operation(
             for (index, (actual, effect)) in args.iter().zip(&callee.effects.parameters).enumerate()
             {
                 if check && (effect.write != Effect::No || effect.structural != Effect::No) {
+                    // Parameter effects do not identify which contained member
+                    // is written. A contained-only restriction is conservative.
+                    let unknown = effect.write == Effect::Unknown
+                        || effect.structural == Effect::Unknown
+                        || !actual.0.contains_key(&vec![]);
                     actual
                         .check(
                             &call.span,
                             &format!("argument {} of '{}'", index + 1, callee.name),
-                            effect.write == Effect::Unknown || effect.structural == Effect::Unknown,
+                            unknown,
                         )
-                        .map_err(|error| diagnostic::Failure::new(error, &call.args[index]))?;
+                        .map_err(|error| {
+                            diagnostic::Failure::new(error, &call.args[index], actual, unknown)
+                        })?;
                 }
                 if effect.retained != Effect::No {
                     state.objects.expose(&references[index]);
@@ -382,8 +407,8 @@ fn operation(
             // Compiler-created snapshots are fresh. A restricted source here
             // would indicate an invalid lowering rather than a user call.
             if check {
-                state
-                    .get(target)
+                let access = state.get(target);
+                access
                     .check(
                         &Span {
                             file: "<IR>".into(),
@@ -393,7 +418,7 @@ fn operation(
                         "Boolean store",
                         false,
                     )
-                    .map_err(|error| diagnostic::Failure::new(error, target))?;
+                    .map_err(|error| diagnostic::Failure::new(error, target, &access, false))?;
             }
         }
         Operation::Release(_)
@@ -426,7 +451,7 @@ fn analyze_body(
     while let Some(index) = pending.pop_front() {
         let mut state = entries[index].as_ref().unwrap().clone();
         let block = &body.blocks[index];
-        for op in &block.instructions {
+        for (position, op) in block.instructions.iter().enumerate() {
             operation(
                 op,
                 &mut state,
@@ -436,7 +461,7 @@ fn analyze_body(
                 &declarations,
                 check,
             )
-            .map_err(|failure| failure.explain(body, program))?;
+            .map_err(|failure| failure.explain(body, program, summaries, (index, position)))?;
         }
         let next = match &block.terminator {
             Terminator::Jump(target) => vec![target.0],

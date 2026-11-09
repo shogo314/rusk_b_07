@@ -16,6 +16,9 @@ pub(super) struct Reference {
     pub unknown: bool,
 }
 impl Reference {
+    pub fn diagnostic_cost(&self) -> usize {
+        1 + self.objects.len() + self.access.diagnostic_cost()
+    }
     pub fn fresh(site: ValueId) -> Self {
         Self {
             objects: [Object { site, path: vec![] }].into(),
@@ -40,6 +43,19 @@ pub(super) struct Heap {
     exposed: BTreeSet<Object>,
 }
 impl Heap {
+    pub fn diagnostic_cost(&self) -> usize {
+        1 + self.exposed.len()
+            + self
+                .members
+                .values()
+                .map(|fields| {
+                    1 + fields
+                        .values()
+                        .map(Reference::diagnostic_cost)
+                        .sum::<usize>()
+                })
+                .sum::<usize>()
+    }
     pub fn join(&mut self, other: &Self) {
         for (object, members) in &other.members {
             for (projection, value) in members {
@@ -124,6 +140,48 @@ impl Heap {
             }
         }
         result
+    }
+    /// Diagnostic-only object reachability. This never adds capabilities or
+    /// participates in the access proof. Unknown links have no concrete path.
+    pub fn paths_to(
+        &self,
+        from: &Reference,
+        target: &Reference,
+        budget: &mut usize,
+    ) -> Vec<Vec<Projection>> {
+        let mut pending = VecDeque::from([(from.objects.clone(), vec![], BTreeSet::new())]);
+        let mut paths = BTreeSet::new();
+        while let Some((objects, path, active)) = pending.pop_front() {
+            if *budget == 0 || paths.len() >= 64 {
+                break;
+            }
+            *budget -= 1;
+            if !objects.is_disjoint(&target.objects) {
+                paths.insert(path.clone());
+            }
+            if path.len() >= 16 {
+                continue;
+            }
+            for object in objects {
+                if active.contains(&object) {
+                    continue;
+                }
+                let mut active = active.clone();
+                active.insert(object.clone());
+                if let Some(fields) = self.members.get(&object) {
+                    for (projection, value) in fields {
+                        if *budget == 0 {
+                            break;
+                        }
+                        *budget -= 1;
+                        let mut path = path.clone();
+                        path.push(projection.clone());
+                        pending.push_back((value.objects.clone(), path, active.clone()));
+                    }
+                }
+            }
+        }
+        paths.into_iter().collect()
     }
     /// True means a destination can have untracked aliases outside this graph.
     pub fn store(&mut self, owner: &Reference, projection: Projection, value: &Reference) -> bool {

@@ -85,6 +85,28 @@ detached = 2;
 
 検出した変更には `cannot modify readonly access`、外部実装や共有先などの不明性で安全を証明できない場合には `cannot prove readonly access is preserved` を表示します。操作の位置、元の変数名・宣言位置、`readonly` の位置を示し、呼び出しでは関数名と引数番号も示します。フィールドなどに含まれた制約はIRの射影経路も表示します。`checked access`には、実際に検査した操作対象の束縛名と位置を表示します。一時的な共有参照やフィールド・payloadの取得を経由する場合は、その取得先も示します。getterなどの呼び出し結果を直接更新する場合は、関数名と呼び出し位置を示します。同名の変数は宣言IDと位置で区別し、結び直し前の代入履歴を推測して原因として表示しません。
 
-この表示は操作対象の説明であり、readonlyの起点からの完全な共有経路ではありません。分岐をまたぐ全履歴や、呼び出し先の本体内部まで含む経路の列挙は今後の改善対象です。
+`readonly propagation path`には、起点から別名・代入・格納・フィールド・payload・捕捉を通じた伝播の候補を示します。通常の関数や静的な関数値を経由する場合は、仮引数・局所別名・返却、変更箇所まで示します。結び直しで制約がなくなった値の古い履歴は使いません。
+
+例えば次の呼び出しは拒否されます。
+
+```rusk
+fn change(x: Int) { let target := x; target = 2; }
+readonly let original := 1;
+change(original);
+```
+
+経路部分には、位置情報とともに次の段階が表示されます。
+
+```text
+readonly binding 'original' introduced here
+readonly argument enters parameter 1 of 'change'
+binding 'x' declared here
+binding 'target' declared here
+argument 1 of '__assign__' may modify this access
+```
+
+不明な外部効果や未追跡のヒープ共有などで経路を精密に示せない場合は、`uncertain readonly propagation path`と理由を表示します。readonlyの制約が集約の内側だけにあり、呼び出し先の効果からどのメンバーを変更するか分からない場合も、安全を証明できないという表示になります。
+
+この経路は静的解析上の候補で、実行済みの操作列ではありません。表示する段階と呼び出し先の探索は各16段までで、長い経路や再帰では省略を明示します。診断用の追加解析にも上限があり、経路を再構成できなくても元の拒否判定と起点の表示は維持します。
 
 ASTでは明示した注釈、HIR/LIRでは `AnnotateAccess` と関数の `access` 要約を確認できます。要約には戻り値・外部への保持に伝わる制約を記録し、注釈の由来と関数の効果解析を分離しています。HIR/LIR・C++を出力する前に検査します。注釈は実行時の処理やC++の `const` を追加しません。

@@ -34,7 +34,7 @@ wt duplicate(7), duplicate::<Str>("abc");
 
 出力は`7 abc`です。型引数は呼び出しから推論するか、`::<...>`で指定します。型引数付き関数は具体的な型に応じて検査・生成されるため、その本体で使う操作を実際の型が提供する必要があります。トレイト境界を書く構文はありません。
 
-`value.f(args)`は通常`f(value, args)`の糖衣構文です。この形式を**UFCS（Uniform Function Call Syntax）**と呼びます。一般的な概念は[Wikipedia日本語版](https://ja.wikipedia.org/wiki/Uniform_Function_Call_Syntax)、Ruskでの評価順は[メソッド形式](index.md#メソッド形式)を参照してください。
+`value.f(args)`は通常`f(value, args)`の糖衣構文です。この形式を**UFCS（Uniform Function Call Syntax）**と呼びます。一般的な概念は[Wikipedia日本語版](https://ja.wikipedia.org/wiki/Uniform_Function_Call_Syntax)、Ruskでの評価順は[メソッド形式](index.md#method-syntax)を参照してください。
 
 ただし関数を保持する構造体フィールドなどの呼び出しは、その関数値を呼びます。明示的な型引数を使う場合は`f::<T>(value, args)`と書きます。[型引数と構造体](beta02.md)も参照してください。
 

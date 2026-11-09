@@ -2,6 +2,7 @@
 //! pure from its name or from target-language source.
 mod private;
 mod routes;
+pub(crate) use routes::projection_name;
 
 use crate::{
     hir::{Place, Rvalue, Value, ValueId},

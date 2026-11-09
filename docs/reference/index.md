@@ -146,6 +146,8 @@ wt a;  // 10 7 7
 
 個数0は空配列です。この場合も初期値の式を評価します。個数が負、または配列の格納形式で表せる長さを超える場合は、位置付きの実行時エラーです。実際に確保できるメモリ量は実行環境に依存します。
 
+<a id="method-syntax"></a>
+
 ## メソッド形式
 
 `a.f(x, y)` は `f(a, x, y)` の糖衣構文です。この仕組みを **UFCS（Uniform Function Call Syntax／統一関数呼び出し構文）** と呼びます。一般的な概念については [Wikipedia日本語版: Uniform Function Call Syntax](https://ja.wikipedia.org/wiki/Uniform_Function_Call_Syntax) を参照してください。
