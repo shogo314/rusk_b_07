@@ -79,7 +79,7 @@ def main():
             reference_env = os.environ.copy()
             reference_env['RUSK_TEST_NO_OPT'] = '1'
             reference_command = ['cargo', 'test', '--locked']
-            for test in ('e2e', 'records', 'tuples', 'generics', 'includes', 'data_structures', 'callables', 'higher_order', 'beta04_structures', 'beta05', 'pipeline', 'blocks_labels', 'enums', 'test_support', 'beta06', 'minmax', 'effects', 'bindings', 'readonly', 'readonly_routes', 'noescape', 'noescape_routes', 'heap_aliases'):
+            for test in ('e2e', 'records', 'tuples', 'generics', 'includes', 'data_structures', 'callables', 'higher_order', 'beta04_structures', 'beta05', 'pipeline', 'blocks_labels', 'enums', 'test_support', 'beta06', 'minmax', 'effects', 'bindings', 'readonly', 'readonly_routes', 'documentation', 'noescape', 'noescape_routes', 'heap_aliases'):
                 reference_command += ['--test', test]
             run_stage('Reference backend (no scalar optimization)',
                       [reference_command], results, env=reference_env)

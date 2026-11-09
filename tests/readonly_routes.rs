@@ -19,7 +19,16 @@ fn diagnostic(source: &str) -> String {
         }
         previous = Some(message);
     }
-    previous.unwrap()
+    let message = previous.unwrap();
+    let steps = path(&message)
+        .lines()
+        .filter(|line| line.starts_with("  ") && !line.starts_with("  ..."))
+        .count();
+    assert!(
+        steps <= 16,
+        "diagnostic exceeds the documented 16 steps: {message}"
+    );
+    message
 }
 fn path(message: &str) -> &str {
     message.split("readonly propagation path:").nth(1).unwrap()

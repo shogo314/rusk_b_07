@@ -8,7 +8,7 @@
 
 ## 現在の状態
 
-β07は開発中です。言語機能と標準APIは完成したβ06を引き継ぎ、変更・副作用・共有・脱出の情報をIRで明示・解析し、一時参照の借用と非脱出スカラーの値保持などへ利用します。任意の引数・ローカル変数の注釈としてreadonly/mutable・fixed/rebindable、引数にはnoescape/escapeを指定できます。[β07の要件](design/beta07.md)と[開始点・実装方針](docs/development/beta07.md)を参照してください。関数の効果と戻り値の共有元を求める初期解析を実装中です。fixed/rebindable・readonly/mutable・noescape/escapeの構文・初期の契約検査は実装済みです。推論した効果を使う引数借用と、閉じたBoolの値保持にも対応しました。一般の要素借用やスカラー全体の最適化は今後の作業です。
+β07では、変更・副作用・共有・脱出の情報をHIR/LIRで解析し、引数・ローカル変数のreadonly/mutable・fixed/rebindableと、引数のnoescape/escapeを任意に指定して契約を検査できます。違反時は宣言・別名・呼び出し先内部の経路と、不明性を説明します。推論した効果に基づく引数借用、閉じたInt・Bool・Charの値保持、安定した配列要素の直接借用、所有者を残した要素の別名と仮引数の別名の分岐・ループをまたぐ借用を実装しました。解析の制限と完成条件は[β07の要件](design/beta07.md)・[実装と検証](docs/development/beta07.md)、測定値とsumの移行見送りの根拠は[性能記録](docs/development/beta07-performance.md)を参照してください。
 
 β06では[パターン分岐・ガード・if let](docs/reference/beta06.md)を追加しています。入れ子のenum、タプル・構造体、定数、orパターン、matchガード、文と式のif let、while letに対応します。[最小・最大演算子](docs/reference/minmax.md)にも対応します。[β06の要件](design/beta06.md)を参照してください。
 

@@ -18,7 +18,19 @@ fn diagnostic(source: &str) -> String {
         }
         message = Some(text);
     }
-    message.unwrap()
+    let message = message.unwrap();
+    let steps = message
+        .split("sharing path:\n")
+        .nth(1)
+        .unwrap_or("")
+        .lines()
+        .filter(|line| line.starts_with("  ") && !line.starts_with("  ..."))
+        .count();
+    assert!(
+        steps <= 16,
+        "diagnostic exceeds the documented 16 steps: {message}"
+    );
+    message
 }
 fn ordered(message: &str, parts: &[&str]) {
     let mut remaining = message;
