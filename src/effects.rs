@@ -654,9 +654,14 @@ fn first_escape(
     callees: &[Summary],
     parameter: usize,
     program: &lir::Program,
-    private: &BTreeSet<ValueId>,
+    private: &[BTreeSet<ValueId>],
 ) -> Option<EscapeWitness> {
     let body = function.body.as_ref()?;
+    let context = routes::Context {
+        program,
+        callees,
+        private,
+    };
     let initial = State {
         values: (0..function.params.len())
             .map(|i| (ValueId::Parameter(i), ReturnOrigins::parameter(i)))
@@ -672,7 +677,7 @@ fn first_escape(
         for op in &block.instructions {
             let before = state.clone();
             let mut step = Summary::inferred(function.params.len());
-            operation(op, &mut state, &mut step, callees, private);
+            operation(op, &mut state, &mut step, callees, &private[function.id]);
             routes.operation(op, &before, &state, callees, program);
             if step.parameters[parameter].escape != Effect::No {
                 let (span, effect, reason, route) = match op {
@@ -691,7 +696,14 @@ fn first_escape(
                                     format!(
                                         "{}{}",
                                         origin_route(&before.get(arg), parameter),
-                                        routes.describe(arg, &before.get(arg), parameter)
+                                        routes.retained(
+                                            arg,
+                                            &before.get(arg),
+                                            parameter,
+                                            call.function,
+                                            i,
+                                            &context
+                                        )
                                     ),
                                 )
                             })
@@ -720,7 +732,7 @@ fn first_escape(
                         format!(
                             "{}{}",
                             origin_route(&before.get(value), parameter),
-                            routes.describe(value, &before.get(value), parameter)
+                            routes.describe(value, &before.get(value), parameter, &context)
                         ),
                     ),
                     _ => (
@@ -754,7 +766,7 @@ fn first_escape(
                         span: span.clone(),
                         effect: step.parameters[parameter].escape,
                         reason: "the return value may share the parameter, one of its elements or a captured value".into(),
-                        route: format!("{}{}", origin_route(&origins, parameter), routes.describe(value, &origins, parameter)),
+                        route: format!("{}{}", origin_route(&origins, parameter), routes.describe(value, &origins, parameter, &context)),
                     });
                 }
                 vec![]
@@ -808,8 +820,7 @@ pub(crate) fn validate_noescape(program: &lir::Program) -> Result<(), String> {
                 let structural = private_plans(program, None);
                 let baseline = solve(program, &structural);
                 let plans = private_plans(program, Some(&baseline));
-                let witness =
-                    first_escape(function, &callees, *parameter, program, &plans[function.id]);
+                let witness = first_escape(function, &callees, *parameter, program, &plans);
                 let span = witness
                     .as_ref()
                     .and_then(|w| w.span.as_ref())

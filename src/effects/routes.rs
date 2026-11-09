@@ -6,13 +6,17 @@ use crate::{
     hir::{Place, Rvalue, Value, ValueId},
     lir::{self, Operation},
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+mod calls;
+pub(super) use calls::Context;
 
 const MAX_STEPS: usize = 16;
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Step {
     span: Option<Span>,
     text: String,
+    callee: Option<(usize, calls::Goal)>,
 }
 #[derive(Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 struct Trail {
@@ -30,22 +34,8 @@ impl Trail {
     fn better_than(&self, other: &Self) -> bool {
         (self.steps.len(), self) < (other.steps.len(), other)
     }
-    fn render(&self) -> String {
-        let mut out = self
-            .steps
-            .iter()
-            .map(|step| {
-                let text = step
-                    .span
-                    .as_ref()
-                    .map_or_else(|| step.text.clone(), |span| span.error(&step.text));
-                format!("  {text}\n")
-            })
-            .collect::<String>();
-        if self.truncated {
-            out += "  ... additional sharing steps omitted\n";
-        }
-        out.trim_end().into()
+    fn render(&self, context: &Context<'_>) -> String {
+        calls::render(self, context)
     }
 }
 fn join_trail(target: &mut Option<Trail>, value: &Option<Trail>) {
@@ -203,7 +193,13 @@ impl Routes {
         join_trail(&mut self.heap, &other.heap);
         *self != old
     }
-    pub fn describe(&self, value: &Value, origins: &ReturnOrigins, parameter: usize) -> String {
+    pub fn describe(
+        &self,
+        value: &Value,
+        origins: &ReturnOrigins,
+        parameter: usize,
+        context: &Context<'_>,
+    ) -> String {
         if origins.unknown {
             if let Some(trail) = self
                 .values
@@ -211,7 +207,7 @@ impl Routes {
                 .and_then(|value| value.uncertain.as_ref())
                 .or(self.heap.as_ref())
             {
-                return format!("\nuncertain sharing path:\n{}", trail.render());
+                return format!("\nuncertain sharing path:\n{}", trail.render(context));
             }
         } else if let Some(alias) = origins
             .aliases
@@ -223,9 +219,49 @@ impl Routes {
                 .and_then(|value| value.known.get(alias))
             && !trail.steps.is_empty()
         {
-            return format!("\nsharing path:\n{}", trail.render());
+            return format!("\nsharing path:\n{}", trail.render(context));
         }
         String::new()
+    }
+    pub fn retained(
+        &self,
+        value: &Value,
+        origins: &ReturnOrigins,
+        parameter: usize,
+        function: usize,
+        argument: usize,
+        context: &Context<'_>,
+    ) -> String {
+        let mut trail = self.trail(value, origins, parameter).unwrap_or_default();
+        trail.push(Step {
+            span: None,
+            text: format!(
+                "retention through argument {} of '{}'",
+                argument + 1,
+                context.program.functions[function].name
+            ),
+            callee: Some((function, calls::Goal::Retained(argument))),
+        });
+        let label = if origins.unknown {
+            "uncertain sharing path"
+        } else {
+            "sharing path"
+        };
+        format!("\n{label}:\n{}", trail.render(context))
+    }
+    fn trail(&self, value: &Value, origins: &ReturnOrigins, parameter: usize) -> Option<Trail> {
+        if origins.unknown {
+            self.values
+                .get(&value.id)
+                .and_then(|v| v.uncertain.clone())
+                .or(self.heap.clone())
+        } else {
+            origins
+                .aliases
+                .iter()
+                .filter(|a| a.parameter == parameter)
+                .find_map(|a| self.values.get(&value.id)?.known.get(a).cloned())
+        }
     }
     pub fn operation(
         &mut self,
@@ -235,7 +271,11 @@ impl Routes {
         callees: &[Summary],
         program: &lir::Program,
     ) {
-        let step = |span: Option<Span>, text: String| Step { span, text };
+        let step = |span: Option<Span>, text: String| Step {
+            span,
+            text,
+            callee: None,
+        };
         let mut produced = match op {
             Operation::DescribeBinding {
                 value,
@@ -376,7 +416,11 @@ impl Routes {
                             path_name(&call.result.ty, &alias.result_path, program)
                         );
                     }
-                    actual.step(step(Some(call.span.clone()), text));
+                    actual.step(Step {
+                        span: Some(call.span.clone()),
+                        text,
+                        callee: Some((call.function, calls::Goal::Returned(alias.clone()))),
+                    });
                     value.join(&actual);
                 }
                 if after.get(&call.result).unknown {
