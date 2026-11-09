@@ -11,7 +11,7 @@ pub(crate) fn emit(
     functions: &[FunctionInfo],
     summaries: &[crate::lir::ProgramFunction],
     optimize: bool,
-    main: bool,
+    current: Option<&crate::lir::ProgramFunction>,
 ) -> String {
     let mut scalar = BTreeSet::new();
     if optimize {
@@ -45,6 +45,13 @@ pub(crate) fn emit(
     } else {
         BTreeMap::new()
     };
+    let parameter_aliases = if optimize {
+        current.map_or_else(BTreeMap::new, |current| {
+            super::scalar_aliases::parameter_plan(function, functions, summaries, current)
+        })
+    } else {
+        BTreeMap::new()
+    };
     let owned = if optimize {
         super::owned_aliases::plan(function, functions, summaries, &scalar_aliases)
     } else {
@@ -73,6 +80,9 @@ pub(crate) fn emit(
     };
     let mut out = String::new();
     for slot in &function.slots {
+        if parameter_aliases.contains_key(&slot.id) {
+            continue;
+        }
         if scalar_aliases
             .get(&slot.id)
             .is_some_and(|owner| *owner != slot.id)
@@ -89,6 +99,12 @@ pub(crate) fn emit(
         }
     }
     for slot in &function.slots {
+        if let Some(parameter) = parameter_aliases.get(&slot.id) {
+            out += &format!(
+                "[[maybe_unused]] const Obj<{}>& {}={parameter};\n",
+                types[&slot.ty], slot.id
+            );
+        }
         if let Some(owner) = scalar_aliases.get(&slot.id)
             && slot.id != *owner
         {
@@ -101,6 +117,7 @@ pub(crate) fn emit(
     let release = |values: &[ValueId]| {
         values
             .iter()
+            .filter(|v| !parameter_aliases.contains_key(*v))
             .filter(|v| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
             .filter_map(|v| match owned.releases.get(v) {
                 Some(Some(owner)) if !owned.elements.contains(owner) => {
@@ -120,9 +137,10 @@ pub(crate) fn emit(
                 result,
                 expression: Rvalue::Share(_),
             } = instruction
-                && scalar_aliases
-                    .get(&result.id)
-                    .is_some_and(|owner| *owner != result.id)
+                && (parameter_aliases.contains_key(&result.id)
+                    || scalar_aliases
+                        .get(&result.id)
+                        .is_some_and(|owner| *owner != result.id))
             {
                 continue;
             }
@@ -309,7 +327,11 @@ pub(crate) fn emit(
                     );
                 } else {
                     out += &release(cleanup);
-                    out += if main { "return 0;\n" } else { "return;\n" };
+                    out += if current.is_none() {
+                        "return 0;\n"
+                    } else {
+                        "return;\n"
+                    };
                 }
             }
             Terminator::Unreachable => out += "std::abort();\n",

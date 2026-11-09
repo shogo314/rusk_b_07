@@ -241,6 +241,18 @@ for ch in chars{wt code(ch);}chars=[];text.push_back('!');wt text;
 fn identity(x:Int)->Int{return x;}
 let b:=[4];for x in b{let saved:=identity(x);saved=7;wt x;}wt b;
 ''', b'', b'9\nYes\nNo\nab!\n7\n7\n'),
+    ('''fn across(x:Int,n:Int)->Int{
+ let alias:=x;let total:=0;
+ for i in 0..n{let local:=alias;if i%2==0{total+=local;}else{total+=x+1;}}
+ return total;
+}
+fn recur(x:Int)->Int{if x==0{return 0;}return x+recur(x-1);}
+wt across(3,3),recur(5);
+let value:=4;wt across(value,{value:=9;2}),value;
+fn code(c:Char)->Bool{let alias:=c;return alias=='a';}
+let text:="ab";wt code(text[0]);text.push_back('!');wt text;
+fn rebound(x:Int)->Int{let saved:=x;x:=7;return saved+x;}wt rebound(2);
+''', b'', b'10 15\n9 9\nYes\nab!\n9\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 

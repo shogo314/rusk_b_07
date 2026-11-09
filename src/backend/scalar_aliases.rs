@@ -2,7 +2,8 @@
 //! owning Obj. Fresh groups stay in generated scalar operations, with mutation
 //! and return promotion. Owned groups stay readonly and may also be passed to
 //! ordinary functions with an inferred borrowed parameter. Foreign calls,
-//! member storage and rebinding keep ordinary ownership.
+//! member storage and rebinding keep ordinary ownership. Stable borrowed scalar
+//! parameters can also back local aliases across blocks for the whole call.
 use super::{FunctionInfo, intrinsics};
 use crate::{
     effects::Effect,
@@ -10,6 +11,12 @@ use crate::{
     lir::{Function, Operation, ProgramFunction, Terminator},
 };
 use std::collections::{BTreeMap, BTreeSet};
+#[derive(Clone, Copy)]
+enum Source<'a> {
+    Fresh,
+    Element,
+    Parameter(&'a BTreeSet<ValueId>),
+}
 fn root(parents: &BTreeMap<ValueId, ValueId>, id: &ValueId) -> ValueId {
     let mut id = id.clone();
     while let Some(parent) = parents.get(&id) {
@@ -25,24 +32,53 @@ pub(super) fn plan(
     functions: &[FunctionInfo],
     summaries: &[ProgramFunction],
 ) -> BTreeMap<ValueId, ValueId> {
-    groups(body, functions, summaries, false)
+    groups(body, functions, summaries, Source::Fresh)
 }
 pub(super) fn owned_plan(
     body: &Function,
     functions: &[FunctionInfo],
     summaries: &[ProgramFunction],
 ) -> BTreeMap<ValueId, ValueId> {
-    groups(body, functions, summaries, true)
+    groups(body, functions, summaries, Source::Element)
+}
+pub(super) fn parameter_plan(
+    body: &Function,
+    functions: &[FunctionInfo],
+    summaries: &[ProgramFunction],
+    current: &ProgramFunction,
+) -> BTreeMap<ValueId, ValueId> {
+    let parameters: BTreeSet<_> = current
+        .params
+        .iter()
+        .enumerate()
+        .filter(|(index, ty)| {
+            matches!(ty.as_str(), "Int" | "Bool" | "Char")
+                && super::borrows_parameter(current, *index)
+        })
+        .map(|(index, _)| ValueId::Parameter(index))
+        .collect();
+    if parameters.is_empty() {
+        return BTreeMap::new();
+    }
+    groups(body, functions, summaries, Source::Parameter(&parameters))
 }
 fn groups(
     body: &Function,
     functions: &[FunctionInfo],
     summaries: &[ProgramFunction],
-    owned: bool,
+    source: Source<'_>,
 ) -> BTreeMap<ValueId, ValueId> {
+    let readonly = !matches!(source, Source::Fresh);
     let mut parents = BTreeMap::new();
-    let mut fresh = BTreeSet::new();
+    let mut origins = BTreeSet::new();
     let mut aliases = BTreeSet::new();
+    // Parameter origins are caller-owned values, never fresh allocations.
+    if let Source::Parameter(parameters) = source {
+        for parameter in parameters {
+            parents.insert(parameter.clone(), parameter.clone());
+            origins.insert(parameter.clone());
+        }
+    }
     for slot in &body.slots {
         if matches!(slot.ty.as_str(), "Bool" | "Int" | "Char") {
             parents.insert(slot.id.clone(), slot.id.clone());
@@ -77,18 +113,22 @@ fn groups(
                 | Operation::Object {
                     result,
                     expression: Rvalue::BoolCopy(_) | Rvalue::VariantTest { .. },
-                } if !owned && matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => {
-                    fresh.insert(result.id.clone());
+                } if !readonly && matches!(result.ty.as_str(), "Bool" | "Int" | "Char") => {
+                    origins.insert(result.id.clone());
                 }
                 Operation::Call(call)
                     if matches!(call.result.ty.as_str(), "Bool" | "Int" | "Char")
-                        && (if owned {
-                            intrinsics::lower_owned(call, &functions[call.function]).is_some()
-                        } else {
-                            intrinsics::lower(call, &functions[call.function]).is_some()
+                        && (match source {
+                            Source::Element => {
+                                intrinsics::lower_owned(call, &functions[call.function]).is_some()
+                            }
+                            Source::Fresh => {
+                                intrinsics::lower(call, &functions[call.function]).is_some()
+                            }
+                            Source::Parameter(_) => false,
                         }) =>
                 {
-                    fresh.insert(call.result.id.clone());
+                    origins.insert(call.result.id.clone());
                 }
                 _ => {}
             }
@@ -103,12 +143,12 @@ fn groups(
     }
     let mut owners = BTreeMap::new();
     for (group, ids) in &members {
-        let roots: Vec<_> = ids.iter().filter(|id| fresh.contains(*id)).collect();
+        let roots: Vec<_> = ids.iter().filter(|id| origins.contains(*id)).collect();
         if ids.len() > 1
             && roots.len() == 1
             && ids
                 .iter()
-                .all(|id| fresh.contains(id) || aliases.contains(id))
+                .all(|id| origins.contains(id) || aliases.contains(id))
         {
             owners.insert(group.clone(), roots[0].clone());
         }
@@ -127,10 +167,10 @@ fn groups(
                     for (index, arg) in call.args.iter().enumerate() {
                         let effect = &summaries[call.function].effects.parameters[index];
                         if (!lowered
-                            && !(owned
+                            && !(readonly
                                 && super::borrows_parameter(&summaries[call.function], index)))
                             || (effect.write != Effect::No
-                                && (owned
+                                && (readonly
                                     || functions[call.function].name != "__assign__"
                                     || index != 0
                                     || effect.write != Effect::May))
@@ -141,7 +181,7 @@ fn groups(
                         }
                     }
                 }
-                Operation::StoreBool { target, .. } if owned => block_value(&target.id),
+                Operation::StoreBool { target, .. } if readonly => block_value(&target.id),
                 Operation::Rebind { target, value, .. } => {
                     block_value(&value.id);
                     if let Place::Local(id) = target {
@@ -159,7 +199,7 @@ fn groups(
                 _ => {}
             }
         }
-        if owned
+        if readonly
             && let Terminator::Return {
                 value: Some(value), ..
             } = &block.terminator

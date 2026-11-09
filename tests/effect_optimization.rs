@@ -466,3 +466,109 @@ let a:=[1];for x in a{wt use_value(x);}"#,
         assert!(!main.contains("const Obj<std::int64_t>& rusk_v"), "{main}");
     }
 }
+
+#[test]
+fn borrowed_parameter_aliases_survive_branches_loops_recursion_and_caller_rebinding() {
+    equivalent(
+        r#"
+fn across(x:Int,n:Int)->Int{
+ let alias:=x;let total:=0;
+ for i in 0..n{let local:=alias;if i%2==0{total+=local;}else{total+=x+1;}}
+ if n<0{return x+0;}return total;
+}
+fn relay(x:Int)->Int{return across(x,2);}
+fn recur(x:Int)->Int{if x==0{return 0;}return x+recur(x-1);}
+wt across(3,3),relay(5),recur(5);
+let value:=4;wt across(value,{value:=9;2}),value;
+fn yes(flag:Bool)->Bool{let alias:=flag;if alias{return true;}return false;}
+wt yes(true),yes(false);
+fn code(c:Char)->Bool{let alias:=c;return alias=='a';}
+let text:="ab";wt code(text[0]);text.push_back('!');wt text;
+"#,
+        "10 11 15\n9 9\nYes No\nYes\nab!\n",
+    );
+    for parameter in ["x:Int", "readonly noescape x:Int", "mutable escape x:Int"] {
+        let case = Case::new(&format!(
+            "fn across({parameter})->Int{{let alias:=x;let total:=0;for i in 0..3{{let local:=alias;if i>0{{total+=local;}}else{{total+=x;}}}}return total;}}wt across(2);"
+        ));
+        assert!(case.compile().status.success());
+        let fast = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        let body = fast
+            .split("// Rusk function ")
+            .find(|body| {
+                body.lines()
+                    .next()
+                    .is_some_and(|line| line.ends_with(": across"))
+            })
+            .unwrap();
+        let aliases: Vec<_> = body
+            .lines()
+            .filter(|line| {
+                line.contains("const Obj<std::int64_t>& ") && line.ends_with("=rusk_p0;")
+            })
+            .collect();
+        assert!(aliases.len() >= 3, "{body}");
+        for alias in aliases {
+            let id = alias
+                .split('&')
+                .nth(1)
+                .unwrap()
+                .split('=')
+                .next()
+                .unwrap()
+                .trim();
+            assert!(!body.contains(&format!("{id}.reset()")), "{body}");
+        }
+        assert!(!body.contains("rusk_p0.reset()"));
+        assert!(case.compile_with_options(&["--no-opt"]).status.success());
+        let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        assert!(!plain.contains("const Obj<std::int64_t>& rusk_v"));
+    }
+}
+
+#[test]
+fn borrowed_parameter_aliases_keep_ownership_for_rebinding_storage_and_capture() {
+    equivalent(
+        r#"
+struct Holder{value:Int;}
+fn rebound(x:Int)->Int{let saved:=x;x:=7;return saved+x;}
+fn split(x:Int)->Int{let alias:=x;alias:=8;return x+alias;}
+fn stored(x:Int)->Int{let holder:=Holder{value:x};return holder.value+1;}
+fn captured(x:Int)->Int{let getter:=()=>x+1;return getter();}
+let value:=2;wt rebound(value),split(value),stored(value),captured(value),value;
+fn change(x:Int){x+=1;}change(value);wt value;
+fn identity(x:Int)->Int{return x;}let held:=identity(value);value=8;wt held;
+"#,
+        "9 10 3 3 2\n3\n8\n",
+    );
+    for source in [
+        "fn inspect(x:Int)->Int{let saved:=x;x:=7;return saved+x;}wt inspect(2);",
+        "fn inspect(x:Int)->Int{let alias:=x;alias:=8;return x+alias;}wt inspect(2);",
+        "struct Holder{value:Int;}fn inspect(x:Int)->Int{let holder:=Holder{value:x};return holder.value+1;}wt inspect(2);",
+        "fn inspect(x:Int)->Int{let getter:=()=>x+1;return getter();}wt inspect(2);",
+    ] {
+        let case = Case::new(source);
+        assert!(case.compile().status.success());
+        let cpp = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+        let body = cpp
+            .split("// Rusk function ")
+            .find(|body| {
+                body.lines()
+                    .next()
+                    .is_some_and(|line| line.ends_with(": inspect"))
+            })
+            .unwrap();
+        assert!(
+            !body
+                .lines()
+                .any(|line| line.contains("const Obj<std::int64_t>& ")
+                    && line.ends_with("=rusk_p0;")),
+            "{body}"
+        );
+        assert!(
+            body.lines()
+                .any(|line| line.starts_with("Obj<std::int64_t> ") && line.ends_with("=rusk_p0;")),
+            "{body}"
+        );
+    }
+}

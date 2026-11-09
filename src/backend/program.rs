@@ -61,7 +61,7 @@ pub(crate) fn emit(program: &Program, context: &Context, optimize: bool) -> Stri
                     &context.functions,
                     &program.functions,
                     optimize,
-                    false
+                    Some(f)
                 )
             );
         }
@@ -74,7 +74,7 @@ pub(crate) fn emit(program: &Program, context: &Context, optimize: bool) -> Stri
         &context.functions,
         &program.functions,
         optimize,
-        true,
+        None,
     );
     out += "}\n";
     out
