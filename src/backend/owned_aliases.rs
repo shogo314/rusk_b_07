@@ -1,5 +1,6 @@
-//! Borrow element aliases within one block. Keep one owner until the final
-//! release, or borrow the slot itself when its source and storage stay alive.
+//! Keep one element owner until the final logical alias release. Exact CFG
+//! states allow aliases across blocks; stable slot borrowing stays block local.
+mod flow;
 use super::{FunctionInfo, intrinsics, scalar_aliases, storage};
 use crate::{
     hir::{Rvalue, ValueId},
@@ -11,6 +12,8 @@ pub(super) struct Plan {
     pub aliases: BTreeMap<ValueId, ValueId>,
     pub releases: BTreeMap<ValueId, Option<ValueId>>,
     pub elements: BTreeSet<ValueId>,
+    pub across_blocks: BTreeSet<ValueId>,
+    pub release_sites: BTreeMap<(usize, usize, usize), ValueId>,
 }
 pub(super) fn plan(
     body: &Function,
@@ -60,16 +63,29 @@ pub(super) fn plan(
         groups.entry(owner).or_default().insert(id);
     }
     let mut result = Plan::default();
+    // Exhaustion only disables further CFG borrowing, never an ownership check.
+    let mut budget = 1_000_000;
     for (owner, members) in groups {
-        if members.iter().any(|id| {
-            persistent.contains(id)
-                || definitions.get(id) != Some(&1)
-                || sites.get(id).is_none_or(|sites| sites.len() != 1)
-        }) {
+        if members.iter().any(|id| definitions.get(id) != Some(&1)) {
             continue;
         }
-        let blocks: BTreeSet<_> = members.iter().map(|id| sites[id][0].0).collect();
-        if blocks.len() != 1 {
+        let local = members.iter().all(|id| {
+            !persistent.contains(id) && sites.get(id).is_some_and(|sites| sites.len() == 1)
+        });
+        let blocks: BTreeSet<_> = members
+            .iter()
+            .flat_map(|id| sites.get(id).into_iter().flatten().map(|site| site.0))
+            .collect();
+        if !local || blocks.len() != 1 {
+            if let Some(resets) = flow::releases(body, &members, &owner, &mut budget) {
+                result.across_blocks.insert(owner.clone());
+                for site in resets {
+                    result.release_sites.insert(site, owner.clone());
+                }
+                for id in members {
+                    result.aliases.insert(id, owner.clone());
+                }
+            }
             continue;
         }
         let last = members

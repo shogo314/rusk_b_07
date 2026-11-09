@@ -57,6 +57,12 @@ pub(crate) fn emit(
     } else {
         super::owned_aliases::Plan::default()
     };
+    let across_owner = |id: &ValueId| {
+        owned
+            .aliases
+            .get(id)
+            .filter(|owner| owned.across_blocks.contains(*owner))
+    };
     let inline_storage = |id: &ValueId| {
         if scalar_aliases.contains_key(id) {
             "RuskInlineScalar"
@@ -66,6 +72,7 @@ pub(crate) fn emit(
     };
     let mut persistent = super::storage::persistent(function);
     persistent.extend(scalar_aliases.values().cloned());
+    persistent.extend(owned.across_blocks.iter().cloned());
     let declaration = |value: &crate::hir::Value| {
         if persistent.contains(&value.id) {
             String::new()
@@ -80,7 +87,9 @@ pub(crate) fn emit(
     };
     let mut out = String::new();
     for slot in &function.slots {
-        if parameter_aliases.contains_key(&slot.id) {
+        if parameter_aliases.contains_key(&slot.id)
+            || across_owner(&slot.id).is_some_and(|owner| *owner != slot.id)
+        {
             continue;
         }
         if scalar_aliases
@@ -99,6 +108,14 @@ pub(crate) fn emit(
         }
     }
     for slot in &function.slots {
+        if let Some(owner) = across_owner(&slot.id)
+            && *owner != slot.id
+        {
+            out += &format!(
+                "[[maybe_unused]] const Obj<{}>& {}={owner};\n",
+                types[&slot.ty], slot.id
+            );
+        }
         if let Some(parameter) = parameter_aliases.get(&slot.id) {
             out += &format!(
                 "[[maybe_unused]] const Obj<{}>& {}={parameter};\n",
@@ -114,30 +131,40 @@ pub(crate) fn emit(
             );
         }
     }
-    let release = |values: &[ValueId]| {
+    let release = |block: usize, position: usize, values: &[ValueId]| {
         values
             .iter()
-            .filter(|v| !parameter_aliases.contains_key(*v))
-            .filter(|v| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
-            .filter_map(|v| match owned.releases.get(v) {
-                Some(Some(owner)) if !owned.elements.contains(owner) => {
-                    Some(format!("{owner}.reset();\n"))
+            .enumerate()
+            .filter(|(_, v)| !parameter_aliases.contains_key(*v))
+            .filter(|(_, v)| !scalar_aliases.get(*v).is_some_and(|owner| owner != *v))
+            .filter_map(|(event, v)| {
+                if across_owner(v).is_some() {
+                    return owned
+                        .release_sites
+                        .get(&(block, position, event))
+                        .map(|owner| format!("{owner}.reset();\n"));
                 }
-                Some(Some(_)) => None,
-                Some(None) => None,
-                None => Some(format!("{v}.reset();\n")),
+                match owned.releases.get(v) {
+                    Some(Some(owner)) if !owned.elements.contains(owner) => {
+                        Some(format!("{owner}.reset();\n"))
+                    }
+                    Some(Some(_)) => None,
+                    Some(None) => None,
+                    None => Some(format!("{v}.reset();\n")),
+                }
             })
             .collect::<String>()
     };
     for (index, block) in function.blocks.iter().enumerate() {
         out += &format!("rusk_block_{index}:{{\n");
-        for instruction in &block.instructions {
+        for (position, instruction) in block.instructions.iter().enumerate() {
             if let Instruction::Declare { result, .. }
             | Instruction::Object {
                 result,
                 expression: Rvalue::Share(_),
             } = instruction
                 && (parameter_aliases.contains_key(&result.id)
+                    || across_owner(&result.id).is_some_and(|owner| *owner != result.id)
                     || scalar_aliases
                         .get(&result.id)
                         .is_some_and(|owner| *owner != result.id))
@@ -255,7 +282,7 @@ pub(crate) fn emit(
                 | Instruction::AnnotateBinding { .. }
                 | Instruction::AnnotateAccess { .. }
                 | Instruction::AnnotateEscape { .. } => {}
-                Instruction::Release(values) => out += &release(values),
+                Instruction::Release(values) => out += &release(index, position, values),
                 Instruction::Call(call) => {
                     let info = &functions[call.function];
                     let direct = if optimize {
@@ -323,10 +350,10 @@ pub(crate) fn emit(
                         "{{Obj<{}> rusk_return={};\n{}return rusk_return;}}\n",
                         types[&value.ty],
                         value.id,
-                        release(cleanup)
+                        release(index, block.instructions.len(), cleanup)
                     );
                 } else {
-                    out += &release(cleanup);
+                    out += &release(index, block.instructions.len(), cleanup);
                     out += if current.is_none() {
                         "return 0;\n"
                     } else {

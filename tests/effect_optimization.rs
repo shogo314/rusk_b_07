@@ -572,3 +572,79 @@ fn identity(x:Int)->Int{return x;}let held:=identity(value);value=8;wt held;
         );
     }
 }
+
+#[test]
+fn element_aliases_cross_branches_loops_and_preserve_replaced_elements() {
+    equivalent(
+        r#"
+let values:=[1,2,3];let total:=0;
+for x in values{let alias:=x;if x%2==0{total+=alias;}else{total+=x+1;}}
+wt total,find(values,2)??-1,find(values,9)??-1;
+let a:=[4];let old:=a[0];let alias:=old;
+if true{a[0]:=9;}else{a=[];}wt old,alias,a;
+let b:=[5];let held:=b[0];let result:=0;
+for i in 0..3{let alias:=held;if i==1{continue;}result+=alias;}
+b=[];wt held,result;
+let flags:=[true,false];for flag in flags{let alias:=flag;if alias{wt flag;}else{wt alias;}}
+fn take(text:Str,flag:Bool){let chars:=[text[0]];let c:=chars[0];let alias:=c;if flag{wt alias;return;}wt c;}
+let text:="ab";take(text,true);text.push_back('!');take(text,false);text.push_back('?');wt text;
+"#,
+        "8 1 -1\n4 4 9\n5 10\nYes\nNo\na\na\nab!?\n",
+    );
+    let case = Case::new(
+        "let a:=[1,2];let total:=0;for x in a{let alias:=x;if x>0{total+=alias;}else{total-=x;}}wt total;",
+    );
+    assert!(case.compile().status.success());
+    let cpp = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    let main = cpp.split_once("int main() {").unwrap().1;
+    let getter = main
+        .lines()
+        .find(|line| line.contains("iterator exhausted"))
+        .unwrap();
+    assert!(!getter.contains("() -> const auto&"), "{getter}");
+    let owner = getter.split('=').next().unwrap().trim();
+    assert!(owner.starts_with("rusk_v"), "{getter}");
+    assert!(
+        main.contains(&format!("Obj<std::int64_t> {owner};")),
+        "{main}"
+    );
+    assert!(
+        main.lines()
+            .any(|line| line.contains("const Obj<std::int64_t>& ")
+                && line.ends_with(&format!("={owner};"))),
+        "{main}"
+    );
+    assert!(main.contains(&format!("{owner}.reset();")), "{main}");
+    assert!(case.compile_with_options(&["--no-opt"]).status.success());
+    let plain = std::fs::read_to_string(case.0.join("main.cpp")).unwrap();
+    assert!(!plain.contains("const Obj<std::int64_t>& rusk_v"));
+}
+
+#[test]
+fn element_alias_flow_preserves_character_release_at_joins_and_early_exits() {
+    equivalent(
+        r#"
+fn run(flag:Bool){
+ let text:="ab";let chars:=[text[0]];
+ {let c:=chars[0];let alias:=c;if flag{chars=[];}else{chars[0]:='z';chars=[];}wt alias;}
+ text.push_back('!');wt text;
+}
+run(true);run(false);
+let a:=[1,2,3];let saved:=0;
+for x in a{if x>1{saved:=x;}if x==2{continue;}wt x;}a=[];wt saved;
+"#,
+        "a\nab!\na\nab!\n1\n3\n3\n",
+    );
+    for source in [
+        "let text:=\"ab\";let chars:=[text[0]];let c:=chars[0];let alias:=c;if true{chars=[];}else{chars[0]:='z';}wt alias;text.push_back('!');",
+        "let a:=[1,2];for x in a{if x>0{a.push_back(3);}wt x;}",
+    ] {
+        let case = Case::new(source);
+        let fast = case.run("");
+        let plain = case.run_with_options("", &["--no-opt"]);
+        assert!(!fast.status.success());
+        assert_eq!(fast.status.code(), plain.status.code());
+        assert_eq!(fast.stdout, plain.stdout);
+        assert_eq!(fast.stderr, plain.stderr);
+    }
+}

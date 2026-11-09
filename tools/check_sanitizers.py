@@ -253,6 +253,17 @@ fn code(c:Char)->Bool{let alias:=c;return alias=='a';}
 let text:="ab";wt code(text[0]);text.push_back('!');wt text;
 fn rebound(x:Int)->Int{let saved:=x;x:=7;return saved+x;}wt rebound(2);
 ''', b'', b'10 15\n9 9\nYes\nab!\n9\n'),
+    ('''let a:=[1,2,3];let total:=0;
+for x in a{let alias:=x;if x%2==0{total+=alias;}else{total+=x+1;}}wt total;
+let b:=[4];let old:=b[0];let alias:=old;if true{b[0]:=9;}else{b=[];}wt alias,b;
+fn take(text:Str,flag:Bool){let chars:=[text[0]];let c:=chars[0];let alias:=c;if flag{wt alias;return;}wt c;}
+let text:="ab";take(text,true);text.push_back('!');take(text,false);text.push_back('?');wt text;
+fn run(flag:Bool){let text:="ab";let chars:=[text[0]];
+ {let c:=chars[0];let alias:=c;if flag{chars=[];}else{chars[0]:='z';chars=[];}wt alias;}
+ text.push_back('!');wt text;
+}
+run(true);run(false);
+''', b'', b'8\n4 9\na\na\nab!?\na\nab!\na\nab!\n'),
     ((ROOT/'examples/prototype/grid_bfs.rusk').read_text(), b'3 4\n....\n.##.\n....\n', b'5\n'),
 ]
 
